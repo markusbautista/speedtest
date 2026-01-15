@@ -397,9 +397,12 @@
           >
             Connection Quality
           </h2>
-          <!-- <button class="text-primary text-sm font-bold hover:underline">
+          <button
+            id="viewReportBtn"
+            class="text-primary text-sm font-bold hover:underline"
+          >
             View Detailed Report
-          </button> -->
+          </button>
         </div>
         <!-- Quality Score Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -495,9 +498,98 @@
             </div>
           </div>
         </div>
+
+        <!-- Test History Section -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight"
+            >
+              Test History
+            </h2>
+            <button
+              id="clearHistoryBtn"
+              class="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary text-sm font-medium hover:underline"
+            >
+              Clear History
+            </button>
+          </div>
+
+          <div
+            class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
+          >
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr
+                    class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700"
+                  >
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Date Taken
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Time Taken
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Download Speed
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Upload Speed
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Vs Previous
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Vs Highest
+                    </th>
+                    <th
+                      class="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Vs Lowest
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="historyTableBody"
+                  class="divide-y divide-gray-100 dark:divide-gray-700"
+                >
+                  <!-- Empty state -->
+                  <tr id="emptyHistoryRow">
+                    <td colspan="7" class="px-4 py-12 text-center">
+                      <div class="flex flex-col items-center gap-3">
+                        <span
+                          class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600"
+                          >history</span
+                        >
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">
+                          No test history yet
+                        </p>
+                        <p class="text-sm text-gray-400 dark:text-gray-500">
+                          Run a speed test to start tracking your results
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Ad / Promo Placeholder (Optional "Delight" - Pro feature nudge) -->
-        <!-- 
-        <div
+        <!-- <div
           class="mt-4 rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-800 dark:to-black p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-white overflow-hidden relative"
         >
           <div
@@ -518,8 +610,8 @@
           >
             Upgrade to Pro
           </button>
-        </div>
-      --></div>
+        </div> -->
+      </div>
     </main>
     <footer
       class="border-t border-gray-200 dark:border-gray-800 bg-surface-light dark:bg-surface-dark py-8 px-6"
@@ -817,570 +909,360 @@
       </div>
     </div>
 
-    <script type="module">
-      // Import Cloudflare Speed Test library
-      import SpeedTest from "https://esm.sh/@cloudflare/speedtest@1.7.0";
-
-      // DOM Elements
-      const startBtn = document.getElementById("startBtn");
-      const btnIcon = document.getElementById("btnIcon");
-      const btnText = document.getElementById("btnText");
-      const downloadSpeed = document.getElementById("downloadSpeed");
-      const uploadSpeed = document.getElementById("uploadSpeed");
-      const downloadProgress = document.getElementById("downloadProgress");
-      const uploadProgress = document.getElementById("uploadProgress");
-      const latency = document.getElementById("latency");
-      const jitter = document.getElementById("jitter");
-      const loadedLatency = document.getElementById("loadedLatency");
-      const serverLocation = document.getElementById("serverLocation");
-      const clientIp = document.getElementById("clientIp");
-      const clientIsp = document.getElementById("clientIsp");
-      const copyServerLocation = document.getElementById("copyServerLocation");
-      const copyClientIp = document.getElementById("copyClientIp");
-      const copyIsp = document.getElementById("copyIsp");
-      const serverProvider = document.getElementById("serverProvider");
-
-      // Quality score elements
-      const streamingBadge = document.getElementById("streamingBadge");
-      const streamingDesc = document.getElementById("streamingDesc");
-      const gamingBadge = document.getElementById("gamingBadge");
-      const gamingDesc = document.getElementById("gamingDesc");
-      const rtcBadge = document.getElementById("rtcBadge");
-      const rtcDesc = document.getElementById("rtcDesc");
-
-      // Settings modal elements
-      const settingsBtn = document.getElementById("settingsBtn");
-      const settingsModal = document.getElementById("settingsModal");
-      const modalBackdrop = document.getElementById("modalBackdrop");
-      const closeSettingsBtn = document.getElementById("closeSettingsBtn");
-      const resetSettingsBtn = document.getElementById("resetSettingsBtn");
-      const saveSettingsBtn = document.getElementById("saveSettingsBtn");
-
-      // Dark mode elements
-      const darkModeToggle = document.getElementById("darkModeToggle");
-      const darkModeIcon = document.getElementById("darkModeIcon");
-
-      let speedTest = null;
-      let isRunning = false;
-
-      // Copy to clipboard with visual feedback
-      async function copyToClipboard(text, button) {
-        try {
-          await navigator.clipboard.writeText(text);
-          const icon = button.querySelector(".material-symbols-outlined");
-          const originalText = icon.textContent;
-          icon.textContent = "check_circle";
-          icon.classList.add("text-green-500");
-
-          setTimeout(() => {
-            icon.textContent = originalText;
-            icon.classList.remove("text-green-500");
-          }, 2000);
-        } catch (err) {
-          console.error("Failed to copy:", err);
-        }
-      }
-
-      // Format speed from bps to Mbps
-      function formatSpeed(bps) {
-        if (!bps || bps === 0) return "—";
-        return (bps / 1_000_000).toFixed(1);
-      }
-
-      // Format latency in ms
-      function formatLatency(ms) {
-        if (!ms || ms === 0) return "—";
-        return ms.toFixed(0);
-      }
-
-      // Get quality rating based on score
-      function getQualityRating(score) {
-        if (score >= 80)
-          return {
-            label: "Excellent",
-            class:
-              "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-          };
-        if (score >= 60)
-          return {
-            label: "Good",
-            class:
-              "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-          };
-        if (score >= 40)
-          return {
-            label: "Fair",
-            class:
-              "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-          };
-        return {
-          label: "Poor",
-          class: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-        };
-      }
-
-      // Get quality descriptions
-      function getStreamingDesc(score) {
-        if (score >= 80)
-          return "Your connection can support multiple 4K streams simultaneously without buffering.";
-        if (score >= 60)
-          return "Smooth HD streaming. 4K may buffer occasionally.";
-        if (score >= 40)
-          return "Suitable for SD/HD streaming. May experience occasional buffering.";
-        return "Limited streaming quality. Expect frequent buffering.";
-      }
-
-      function getGamingDesc(score) {
-        if (score >= 80)
-          return "Excellent for competitive gaming with minimal latency.";
-        if (score >= 60)
-          return "Good for most online games. Occasional lag spikes may occur.";
-        if (score >= 40)
-          return "Playable but may experience noticeable lag in fast-paced games.";
-        return "High latency may cause significant lag in online games.";
-      }
-
-      function getRtcDesc(score) {
-        if (score >= 80)
-          return "Crystal clear audio and video calls. Perfect for Zoom, Teams, and Meet.";
-        if (score >= 60)
-          return "Good quality calls. Minor quality drops possible under load.";
-        if (score >= 40)
-          return "Usable for calls but may experience audio/video issues.";
-        return "May experience choppy audio and video during calls.";
-      }
-
-      // Update UI with current results
-      function updateResults() {
-        if (!speedTest?.results) return;
-        const results = speedTest.results;
-
-        const down = results.getDownloadBandwidth();
-        if (down) {
-          downloadSpeed.textContent = formatSpeed(down);
-          const downPercent = Math.min((down / 1_000_000_000) * 100, 100);
-          downloadProgress.style.width = `${downPercent}%`;
-        }
-
-        const up = results.getUploadBandwidth();
-        if (up) {
-          uploadSpeed.textContent = formatSpeed(up);
-          const upPercent = Math.min((up / 500_000_000) * 100, 100);
-          uploadProgress.style.width = `${upPercent}%`;
-        }
-
-        const lat = results.getUnloadedLatency();
-        if (lat) latency.textContent = formatLatency(lat);
-
-        const jit = results.getUnloadedJitter();
-        if (jit) jitter.textContent = formatLatency(jit);
-
-        const downLoadedLat = results.getDownLoadedLatency();
-        if (downLoadedLat)
-          loadedLatency.textContent = formatLatency(downLoadedLat);
-
-        const summary = results.getSummary();
-        if (summary?.serverLocations?.length > 0) {
-          serverLocation.textContent = summary.serverLocations.join(", ");
-        }
-        // Update client info from speed test if available
-        if (summary?.clientIp && clientIp.textContent === "—") {
-          clientIp.textContent = summary.clientIp;
-        }
-        if (summary?.asOrganization) {
-          clientIsp.textContent = summary.asOrganization;
-        }
-      }
-
-      // Update quality scores
-      function updateScores() {
-        if (!speedTest?.results) return;
-        const scores = speedTest.results.getScores();
-        if (!scores) return;
-
-        if (scores.streaming !== undefined) {
-          const rating = getQualityRating(scores.streaming.points);
-          streamingBadge.textContent = rating.label;
-          streamingBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
-          streamingDesc.textContent = getStreamingDesc(scores.streaming.points);
-        }
-
-        if (scores.gaming !== undefined) {
-          const rating = getQualityRating(scores.gaming.points);
-          gamingBadge.textContent = rating.label;
-          gamingBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
-          gamingDesc.textContent = getGamingDesc(scores.gaming.points);
-        }
-
-        if (scores.rtc !== undefined) {
-          const rating = getQualityRating(scores.rtc.points);
-          rtcBadge.textContent = rating.label;
-          rtcBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
-          rtcDesc.textContent = getRtcDesc(scores.rtc.points);
-        }
-      }
-
-      // Fetch client info using CORS-friendly API
-      async function fetchClientInfo() {
-        // Try multiple reliable CORS-friendly APIs with fallbacks
-        const apis = [
-          {
-            url: "https://ipapi.co/json/",
-            parse: (data) => ({
-              ip: data.ip,
-              location:
-                data.city && data.country_name
-                  ? `${data.city}, ${data.country_name}`
-                  : null,
-              isp: data.org,
-            }),
-          },
-          {
-            url: "https://api.ipify.org?format=json",
-            parse: (data) => ({
-              ip: data.ip,
-              location: null,
-              isp: null,
-            }),
-          },
-          {
-            url: "https://api.bigdatacloud.net/data/client-ip",
-            parse: (data) => ({
-              ip: data.ipString,
-              location: null,
-              isp: null,
-            }),
-          },
-        ];
-
-        for (const api of apis) {
-          try {
-            const response = await fetch(api.url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            const info = await api.parse(data);
-
-            if (info.ip) clientIp.textContent = info.ip;
-            if (info.isp) clientIsp.textContent = info.isp;
-            if (info.location) serverLocation.textContent = info.location;
-
-            console.log("✓ Client info loaded from:", api.url);
-            return; // Success, exit
-          } catch (e) {
-            console.log(`✗ ${api.url}:`, e.message);
-          }
-        }
-
-        console.log(
-          "All APIs failed. Info will be populated from speed test results."
-        );
-      }
-
-      // Reset UI to initial state
-      function resetUI() {
-        downloadSpeed.textContent = "—";
-        uploadSpeed.textContent = "—";
-        downloadProgress.style.width = "0%";
-        uploadProgress.style.width = "0%";
-        latency.textContent = "—";
-        jitter.textContent = "—";
-        loadedLatency.textContent = "—";
-
-        streamingBadge.textContent = "—";
-        streamingBadge.className =
-          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        streamingDesc.textContent = "Run a test to see your streaming quality.";
-
-        gamingBadge.textContent = "—";
-        gamingBadge.className =
-          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        gamingDesc.textContent = "Run a test to see your gaming quality.";
-
-        rtcBadge.textContent = "—";
-        rtcBadge.className =
-          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        rtcDesc.textContent = "Run a test to see your video call quality.";
-      }
-
-      // Initialize and start speed test
-      function startSpeedTest() {
-        if (isRunning) return;
-
-        // Smooth scroll to speed meters on mobile
-        if (window.innerWidth < 768) {
-          document.getElementById("speedMeters")?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-
-        isRunning = true;
-        btnIcon.textContent = "hourglass_empty";
-        btnText.textContent = "Testing...";
-        startBtn.disabled = true;
-        startBtn.classList.add("opacity-70", "cursor-not-allowed");
-
-        resetUI();
-
-        // Get settings from modal
-        const settings = getSettings();
-        speedTest = new SpeedTest(settings);
-
-        speedTest.onResultsChange = ({ type }) => {
-          updateResults();
-
-          if (type === "latency") {
-            btnText.textContent = "Measuring latency...";
-          } else if (type === "download") {
-            btnText.textContent = "Testing download...";
-          } else if (type === "upload") {
-            btnText.textContent = "Testing upload...";
-          }
-        };
-
-        speedTest.onFinish = (results) => {
-          isRunning = false;
-          btnIcon.textContent = "replay";
-          btnText.textContent = "Test Again";
-          startBtn.disabled = false;
-          startBtn.classList.remove("opacity-70", "cursor-not-allowed");
-
-          updateResults();
-          updateScores();
-
-          console.log("Speed Test Results:", results.getSummary());
-          console.log("Quality Scores:", results.getScores());
-        };
-
-        speedTest.onError = (error) => {
-          console.error("Speed test error:", error);
-          isRunning = false;
-          btnIcon.textContent = "error";
-          btnText.textContent = "Try Again";
-          startBtn.disabled = false;
-          startBtn.classList.remove("opacity-70", "cursor-not-allowed");
-        };
-      }
-
-      // Event listeners
-      startBtn.addEventListener("click", startSpeedTest);
-
-      // Copy server location
-      copyServerLocation.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const text = serverLocation.textContent;
-        if (text && text !== "—") {
-          copyToClipboard(text, copyServerLocation);
-        }
-      });
-
-      // Copy client IP
-      copyClientIp.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const text = clientIp.textContent;
-        if (text && text !== "—") {
-          copyToClipboard(text, copyClientIp);
-        }
-      });
-
-      // Copy ISP
-      copyIsp.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const text = clientIsp.textContent;
-        if (text && text !== "—") {
-          copyToClipboard(text, copyIsp);
-        }
-      });
-
-      // Settings modal functions
-      function openSettingsModal() {
-        settingsModal.classList.remove("hidden");
-        document.body.style.overflow = "hidden";
-      }
-
-      function closeSettingsModal() {
-        settingsModal.classList.add("hidden");
-        document.body.style.overflow = "";
-      }
-
-      // Get settings from modal form
-      function getSettings() {
-        const testMode = document.getElementById("testMode").value;
-        const measureDownloadLoadedLatency = document.getElementById(
-          "measureDownloadLoadedLatency"
-        ).checked;
-        const measureUploadLoadedLatency = document.getElementById(
-          "measureUploadLoadedLatency"
-        ).checked;
-        const latencyPercentile = parseFloat(
-          document.getElementById("latencyPercentile").value
-        );
-        const bandwidthPercentile = parseFloat(
-          document.getElementById("bandwidthPercentile").value
-        );
-        const loadedLatencyThrottle = parseInt(
-          document.getElementById("loadedLatencyThrottle").value
-        );
-        const bandwidthMinRequestDuration = parseInt(
-          document.getElementById("bandwidthMinRequestDuration").value
-        );
-        const downloadApiUrl = document
-          .getElementById("downloadApiUrl")
-          .value.trim();
-        const uploadApiUrl = document
-          .getElementById("uploadApiUrl")
-          .value.trim();
-
-        let measurements;
-        switch (testMode) {
-          case "quick":
-            measurements = [
-              { type: "latency", numPackets: 5 },
-              {
-                type: "download",
-                bytes: 1e5,
-                count: 3,
-                bypassMinDuration: true,
-              },
-              { type: "download", bytes: 1e6, count: 3 },
-              { type: "upload", bytes: 1e5, count: 3 },
-              { type: "upload", bytes: 1e6, count: 3 },
-            ];
-            break;
-          case "download-only":
-            measurements = [
-              { type: "latency", numPackets: 1 },
-              {
-                type: "download",
-                bytes: 1e5,
-                count: 1,
-                bypassMinDuration: true,
-              },
-              { type: "latency", numPackets: 20 },
-              { type: "download", bytes: 1e5, count: 9 },
-              { type: "download", bytes: 1e6, count: 8 },
-              { type: "download", bytes: 1e7, count: 6 },
-              { type: "download", bytes: 2.5e7, count: 4 },
-              { type: "download", bytes: 1e8, count: 3 },
-            ];
-            break;
-          case "upload-only":
-            measurements = [
-              { type: "latency", numPackets: 1 },
-              { type: "latency", numPackets: 20 },
-              { type: "upload", bytes: 1e5, count: 8 },
-              { type: "upload", bytes: 1e6, count: 6 },
-              { type: "upload", bytes: 1e7, count: 4 },
-              { type: "upload", bytes: 2.5e7, count: 4 },
-              { type: "upload", bytes: 5e7, count: 3 },
-            ];
-            break;
-          default:
-            measurements = [
-              { type: "latency", numPackets: 1 },
-              {
-                type: "download",
-                bytes: 1e5,
-                count: 1,
-                bypassMinDuration: true,
-              },
-              { type: "latency", numPackets: 20 },
-              { type: "download", bytes: 1e5, count: 9 },
-              { type: "download", bytes: 1e6, count: 8 },
-              { type: "upload", bytes: 1e5, count: 8 },
-              { type: "upload", bytes: 1e6, count: 6 },
-              { type: "download", bytes: 1e7, count: 6 },
-              { type: "upload", bytes: 1e7, count: 4 },
-              { type: "download", bytes: 2.5e7, count: 4 },
-              { type: "upload", bytes: 2.5e7, count: 4 },
-              { type: "download", bytes: 1e8, count: 3 },
-              { type: "upload", bytes: 5e7, count: 3 },
-              { type: "download", bytes: 2.5e8, count: 2 },
-            ];
-        }
-
-        const config = {
-          autoStart: true,
-          measureDownloadLoadedLatency,
-          measureUploadLoadedLatency,
-          latencyPercentile,
-          bandwidthPercentile,
-          loadedLatencyThrottle,
-          bandwidthMinRequestDuration,
-          measurements,
-        };
-
-        if (downloadApiUrl) config.downloadApiUrl = downloadApiUrl;
-        if (uploadApiUrl) config.uploadApiUrl = uploadApiUrl;
-
-        return config;
-      }
-
-      // Reset settings to defaults
-      function resetSettings() {
-        document.getElementById("testMode").value = "full";
-        document.getElementById("measureDownloadLoadedLatency").checked = true;
-        document.getElementById("measureUploadLoadedLatency").checked = true;
-        document.getElementById("latencyPercentile").value = "0.5";
-        document.getElementById("bandwidthPercentile").value = "0.9";
-        document.getElementById("loadedLatencyThrottle").value = "400";
-        document.getElementById("bandwidthMinRequestDuration").value = "10";
-        document.getElementById("downloadApiUrl").value =
-          "https://speed.cloudflare.com/__down";
-        document.getElementById("uploadApiUrl").value =
-          "https://speed.cloudflare.com/__up";
-      }
-
-      // Settings modal event listeners
-      settingsBtn.addEventListener("click", openSettingsModal);
-      closeSettingsBtn.addEventListener("click", closeSettingsModal);
-      modalBackdrop.addEventListener("click", closeSettingsModal);
-      resetSettingsBtn.addEventListener("click", resetSettings);
-      saveSettingsBtn.addEventListener("click", () => {
-        closeSettingsModal();
-        // Settings are read when test starts, no need to save separately
-      });
-
-      // Close modal on Escape key
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) {
-          closeSettingsModal();
-        }
-      });
-
-      // Dark mode toggle functionality
-      function updateDarkModeIcon() {
-        const isDark = document.documentElement.classList.contains("dark");
-        darkModeIcon.textContent = isDark ? "light_mode" : "dark_mode";
-      }
-
-      function toggleDarkMode() {
-        document.documentElement.classList.toggle("dark");
-        const isDark = document.documentElement.classList.contains("dark");
-        localStorage.setItem("darkMode", isDark ? "dark" : "light");
-        updateDarkModeIcon();
-      }
-
-      // Initialize dark mode from localStorage
-      function initDarkMode() {
-        const savedMode = localStorage.getItem("darkMode");
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-
-        if (savedMode === "dark" || (!savedMode && prefersDark)) {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-        updateDarkModeIcon();
-      }
-
-      darkModeToggle.addEventListener("click", toggleDarkMode);
-      initDarkMode();
-
-      // Fetch client info on load
-      fetchClientInfo();
-    </script>
+    <!-- Detailed Report Modal -->
+    <div id="reportModal" class="fixed inset-0 z-[100] hidden">
+      <!-- Backdrop with blur -->
+      <div
+        id="reportModalBackdrop"
+        class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      ></div>
+
+      <!-- Modal Content -->
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div
+          class="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+        >
+          <!-- Modal Header -->
+          <div
+            class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center gap-3">
+              <div class="bg-primary/10 p-2 rounded-lg">
+                <span class="material-symbols-outlined text-primary"
+                  >assessment</span
+                >
+              </div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                Detailed Speed Test Report
+              </h2>
+            </div>
+            <button
+              id="closeReportBtn"
+              class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <span class="material-symbols-outlined text-gray-500">close</span>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
+            <!-- Speed Metrics Section -->
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-lg">speed</span>
+                Speed Metrics
+              </h3>
+
+              <div class="space-y-2">
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary"
+                      >download</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Download Speed</span
+                    >
+                  </div>
+                  <span
+                    id="reportDownloadSpeed"
+                    class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"
+                  >
+                    — Mbps
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="material-symbols-outlined text-purple-600 dark:text-purple-400"
+                      >upload</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Upload Speed</span
+                    >
+                  </div>
+                  <span
+                    id="reportUploadSpeed"
+                    class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"
+                  >
+                    — Mbps
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Latency Metrics Section -->
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-lg">timer</span>
+                Latency Metrics
+              </h3>
+
+              <div class="space-y-2">
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >swap_horiz</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Unloaded Latency</span
+                    >
+                  </div>
+                  <span
+                    id="reportLatency"
+                    class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"
+                  >
+                    — ms
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >graphic_eq</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Jitter</span
+                    >
+                  </div>
+                  <span
+                    id="reportJitter"
+                    class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"
+                  >
+                    — ms
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >network_check</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Loaded Latency</span
+                    >
+                  </div>
+                  <span
+                    id="reportLoadedLatency"
+                    class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"
+                  >
+                    — ms
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Connection Info Section -->
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-lg">info</span>
+                Connection Information
+              </h3>
+
+              <div class="space-y-2">
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >public</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Server Location</span
+                    >
+                  </div>
+                  <span
+                    id="reportServerLocation"
+                    class="text-sm font-medium text-gray-900 dark:text-white text-right"
+                  >
+                    —
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >router</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >Client IP</span
+                    >
+                  </div>
+                  <span
+                    id="reportClientIp"
+                    class="text-sm font-medium text-gray-900 dark:text-white font-mono"
+                  >
+                    —
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >business</span
+                    >
+                    <span class="font-medium text-gray-900 dark:text-white"
+                      >ISP</span
+                    >
+                  </div>
+                  <span
+                    id="reportClientIsp"
+                    class="text-sm font-medium text-gray-900 dark:text-white text-right"
+                  >
+                    —
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quality Scores Section -->
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-lg">star</span>
+                Quality Scores
+              </h3>
+
+              <div class="space-y-2">
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >4k</span
+                    >
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">
+                        Streaming Quality
+                      </div>
+                      <p
+                        id="reportStreamingDesc"
+                        class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      >
+                        Run a test to see your streaming quality.
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    id="reportStreamingBadge"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  >
+                    —
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >sports_esports</span
+                    >
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">
+                        Gaming Quality
+                      </div>
+                      <p
+                        id="reportGamingDesc"
+                        class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      >
+                        Run a test to see your gaming quality.
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    id="reportGamingBadge"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  >
+                    —
+                  </span>
+                </div>
+
+                <div
+                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-gray-500"
+                      >video_camera_front</span
+                    >
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">
+                        Video Call Quality
+                      </div>
+                      <p
+                        id="reportRtcDesc"
+                        class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      >
+                        Run a test to see your video call quality.
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    id="reportRtcBadge"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  >
+                    —
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timestamp -->
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div
+                class="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+              >
+                <span class="material-symbols-outlined text-sm">schedule</span>
+                <span id="reportTimestamp">Test not completed yet</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div
+            class="flex items-center justify-between gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+          >
+            <button
+              id="exportPdfBtn"
+              class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-bold flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-lg"
+                >picture_as_pdf</span
+              >
+              Export PDF
+            </button>
+            <button
+              id="closeReportBtn2"
+              class="px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors font-bold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/script.js"></script>
   </body>
 </html>
