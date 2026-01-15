@@ -212,7 +212,9 @@
           <div
             class="hidden md:block h-10 w-px bg-gray-200 dark:bg-gray-700"
           ></div>
-          <div class="flex-1 flex justify-center items-center gap-3">
+          <div
+            class="flex-1 flex justify-center items-center gap-3 self-center md:self-auto"
+          >
             <button
               id="settingsBtn"
               class="h-12 w-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg transition-all flex items-center justify-center"
@@ -232,7 +234,10 @@
           </div>
         </div>
         <!-- Hero Speed Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          id="speedMeters"
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-20"
+        >
           <!-- Download Card -->
           <div
             class="group relative overflow-hidden bg-surface-light dark:bg-surface-dark rounded-2xl p-8 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all"
@@ -1097,6 +1102,14 @@
       // Initialize and start speed test
       function startSpeedTest() {
         if (isRunning) return;
+
+        // Smooth scroll to speed meters on mobile
+        if (window.innerWidth < 768) {
+          document.getElementById("speedMeters")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
 
         isRunning = true;
         btnIcon.textContent = "hourglass_empty";
