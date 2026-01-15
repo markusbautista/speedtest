@@ -1017,29 +1017,6 @@
         // Try multiple reliable CORS-friendly APIs with fallbacks
         const apis = [
           {
-            url: "https://api.ipify.org?format=json",
-            parse: async (data) => {
-              const info = { ip: data.ip, location: null, isp: null };
-              // Get geo info from ip-api.com (free, no API key needed)
-              try {
-                const geoResponse = await fetch(
-                  `https://ip-api.com/json/${data.ip}`
-                );
-                const geoData = await geoResponse.json();
-                if (geoData.status === "success") {
-                  info.location =
-                    geoData.city && geoData.country
-                      ? `${geoData.city}, ${geoData.country}`
-                      : null;
-                  info.isp = geoData.isp || geoData.org || null;
-                }
-              } catch (e) {
-                console.log("Geo lookup skipped");
-              }
-              return info;
-            },
-          },
-          {
             url: "https://ipapi.co/json/",
             parse: (data) => ({
               ip: data.ip,
@@ -1048,6 +1025,14 @@
                   ? `${data.city}, ${data.country_name}`
                   : null,
               isp: data.org,
+            }),
+          },
+          {
+            url: "https://api.ipify.org?format=json",
+            parse: (data) => ({
+              ip: data.ip,
+              location: null,
+              isp: null,
             }),
           },
           {
