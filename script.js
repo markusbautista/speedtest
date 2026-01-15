@@ -2,6 +2,38 @@
 import SpeedTest from "https://esm.sh/@cloudflare/speedtest@1.7.0";
 import jsPDF from "https://esm.sh/jspdf@2.5.1";
 
+// ==========================================
+// Firebase Configuration
+// ==========================================
+// TODO: Replace with your Firebase project config
+const firebaseConfig = {
+  apiKey: "AIzaSyBRlUfrnqJJsssNinohGo7QxR8ZjAeXT-c",
+
+  authDomain: "speedtest-efd44.firebaseapp.com",
+
+  databaseURL:
+    "https://speedtest-efd44-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+  projectId: "speedtest-efd44",
+
+  storageBucket: "speedtest-efd44.firebasestorage.app",
+
+  messagingSenderId: "352772397442",
+
+  appId: "1:352772397442:web:899bd6e1c989f51d94579b",
+
+  measurementId: "G-DSX41B1CMP",
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Auth state
+let currentUser = null;
+let isAuthInitialized = false;
+
 // DOM Elements
 const startBtn = document.getElementById("startBtn");
 const btnIcon = document.getElementById("btnIcon");
@@ -53,6 +85,34 @@ const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 // Dark mode elements
 const darkModeToggle = document.getElementById("darkModeToggle");
 const darkModeIcon = document.getElementById("darkModeIcon");
+
+// Auth modal elements
+const authModal = document.getElementById("authModal");
+const authModalBackdrop = document.getElementById("authModalBackdrop");
+const closeAuthBtn = document.getElementById("closeAuthBtn");
+const authModalTitle = document.getElementById("authModalTitle");
+const authError = document.getElementById("authError");
+const googleSignInBtn = document.getElementById("googleSignInBtn");
+const authForm = document.getElementById("authForm");
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+const authConfirmPassword = document.getElementById("authConfirmPassword");
+const confirmPasswordField = document.getElementById("confirmPasswordField");
+const authSubmitBtn = document.getElementById("authSubmitBtn");
+const authSubmitText = document.getElementById("authSubmitText");
+const authSubmitSpinner = document.getElementById("authSubmitSpinner");
+const authToggleText = document.getElementById("authToggleText");
+const authToggleBtn = document.getElementById("authToggleBtn");
+
+// Auth UI elements
+const loginBtn = document.getElementById("loginBtn");
+const userMenu = document.getElementById("userMenu");
+const userMenuBtn = document.getElementById("userMenuBtn");
+const userAvatar = document.getElementById("userAvatar");
+const userName = document.getElementById("userName");
+const userDropdown = document.getElementById("userDropdown");
+const userEmailDisplay = document.getElementById("userEmailDisplay");
+const logoutBtn = document.getElementById("logoutBtn");
 
 let speedTest = null;
 let isRunning = false;
@@ -113,27 +173,337 @@ function getQualityRating(score) {
   };
 }
 
-// Load test history from localStorage
-function loadHistory() {
-  const saved = localStorage.getItem("speedTestHistory");
-  if (saved) {
-    try {
-      testHistory = JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to load history:", e);
+// ==========================================
+// Firebase Auth Functions
+// ==========================================
+let isSignUpMode = false;
+
+// Show auth error message
+function showAuthError(message) {
+  authError.textContent = message;
+  authError.classList.remove("hidden");
+}
+
+// Hide auth error message
+function hideAuthError() {
+  authError.classList.add("hidden");
+}
+
+// Toggle between sign in and sign up modes
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  hideAuthError();
+  authForm.reset();
+
+  if (isSignUpMode) {
+    authModalTitle.textContent = "Create Account";
+    authSubmitText.textContent = "Sign Up";
+    authToggleText.textContent = "Already have an account?";
+    authToggleBtn.textContent = "Sign In";
+    confirmPasswordField.classList.remove("hidden");
+    authConfirmPassword.required = true;
+  } else {
+    authModalTitle.textContent = "Sign In";
+    authSubmitText.textContent = "Sign In";
+    authToggleText.textContent = "Don't have an account?";
+    authToggleBtn.textContent = "Sign Up";
+    confirmPasswordField.classList.add("hidden");
+    authConfirmPassword.required = false;
+  }
+}
+
+// Open auth modal
+function openAuthModal() {
+  authModal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  hideAuthError();
+}
+
+// Close auth modal
+function closeAuthModal() {
+  authModal.classList.add("hidden");
+  document.body.style.overflow = "";
+  authForm.reset();
+  hideAuthError();
+  // Reset to sign in mode
+  if (isSignUpMode) {
+    toggleAuthMode();
+  }
+}
+
+// Update UI based on auth state
+function updateAuthUI(user) {
+  if (user) {
+    loginBtn.classList.add("hidden");
+    userMenu.classList.remove("hidden");
+
+    // Set user info
+    const displayName = user.displayName || user.email.split("@")[0];
+    userName.textContent = displayName;
+    userEmailDisplay.textContent = user.email;
+
+    // Set avatar
+    if (user.photoURL) {
+      userAvatar.src = user.photoURL;
+    } else {
+      // Generate a placeholder avatar with initials
+      userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        displayName
+      )}&background=ea2a33&color=fff`;
+    }
+  } else {
+    loginBtn.classList.remove("hidden");
+    userMenu.classList.add("hidden");
+    userDropdown.classList.add("hidden");
+  }
+}
+
+// Toggle user dropdown menu
+function toggleUserDropdown() {
+  userDropdown.classList.toggle("hidden");
+}
+
+// Close dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  if (userMenu && !userMenu.contains(e.target)) {
+    userDropdown.classList.add("hidden");
+  }
+});
+
+// Sign in with Google
+async function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await auth.signInWithPopup(provider);
+    closeAuthModal();
+  } catch (error) {
+    console.error("Google sign-in error:", error);
+    showAuthError(getAuthErrorMessage(error.code));
+  }
+}
+
+// Sign in with email and password
+async function signInWithEmail(email, password) {
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    closeAuthModal();
+  } catch (error) {
+    console.error("Email sign-in error:", error);
+    showAuthError(getAuthErrorMessage(error.code));
+  }
+}
+
+// Sign up with email and password
+async function signUpWithEmail(email, password) {
+  try {
+    await auth.createUserWithEmailAndPassword(email, password);
+    closeAuthModal();
+  } catch (error) {
+    console.error("Sign-up error:", error);
+    showAuthError(getAuthErrorMessage(error.code));
+  }
+}
+
+// Sign out
+async function signOut() {
+  try {
+    await auth.signOut();
+    userDropdown.classList.add("hidden");
+  } catch (error) {
+    console.error("Sign-out error:", error);
+  }
+}
+
+// Get user-friendly error messages
+function getAuthErrorMessage(code) {
+  const messages = {
+    "auth/email-already-in-use":
+      "This email is already registered. Try signing in instead.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/operation-not-allowed": "Email/password sign-in is not enabled.",
+    "auth/weak-password": "Password should be at least 6 characters.",
+    "auth/user-disabled": "This account has been disabled.",
+    "auth/user-not-found": "No account found with this email.",
+    "auth/wrong-password": "Incorrect password. Please try again.",
+    "auth/invalid-credential": "Invalid email or password.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/popup-closed-by-user": "Sign-in was cancelled.",
+    "auth/network-request-failed":
+      "Network error. Please check your connection.",
+  };
+  return messages[code] || "An error occurred. Please try again.";
+}
+
+// Handle auth form submission
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  hideAuthError();
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+
+  // Show loading state
+  authSubmitBtn.disabled = true;
+  authSubmitSpinner.classList.remove("hidden");
+
+  if (isSignUpMode) {
+    const confirmPassword = authConfirmPassword.value;
+    if (password !== confirmPassword) {
+      showAuthError("Passwords do not match.");
+      authSubmitBtn.disabled = false;
+      authSubmitSpinner.classList.add("hidden");
+      return;
+    }
+    await signUpWithEmail(email, password);
+  } else {
+    await signInWithEmail(email, password);
+  }
+
+  // Reset loading state
+  authSubmitBtn.disabled = false;
+  authSubmitSpinner.classList.add("hidden");
+}
+
+// ==========================================
+// Firestore Data Functions
+// ==========================================
+
+// Get user's history collection reference
+function getUserHistoryRef() {
+  if (!currentUser) return null;
+  return db.collection("users").doc(currentUser.uid).collection("testHistory");
+}
+
+// Load history from Firestore
+async function loadHistoryFromFirestore() {
+  const historyRef = getUserHistoryRef();
+  if (!historyRef) return [];
+
+  try {
+    const snapshot = await historyRef
+      .orderBy("timestamp", "desc")
+      .limit(50)
+      .get();
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Failed to load history from Firestore:", error);
+    return [];
+  }
+}
+
+// Save single test result to Firestore
+async function saveToFirestore(result) {
+  const historyRef = getUserHistoryRef();
+  if (!historyRef) return null;
+
+  try {
+    const docRef = await historyRef.add(result);
+    return docRef.id;
+  } catch (error) {
+    console.error("Failed to save to Firestore:", error);
+    return null;
+  }
+}
+
+// Clear history from Firestore
+async function clearFirestoreHistory() {
+  const historyRef = getUserHistoryRef();
+  if (!historyRef) return;
+
+  try {
+    const snapshot = await historyRef.get();
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  } catch (error) {
+    console.error("Failed to clear Firestore history:", error);
+  }
+}
+
+// Migrate localStorage data to Firestore (on first login)
+async function migrateLocalStorageToFirestore() {
+  const localData = localStorage.getItem("speedTestHistory");
+  if (!localData) return;
+
+  try {
+    const localHistory = JSON.parse(localData);
+    if (!localHistory || localHistory.length === 0) return;
+
+    // Check if user already has data in Firestore
+    const existingData = await loadHistoryFromFirestore();
+    if (existingData.length > 0) {
+      // User already has cloud data, clear localStorage
+      localStorage.removeItem("speedTestHistory");
+      console.log("User already has cloud data. Cleared localStorage.");
+      return;
+    }
+
+    // Upload local data to Firestore
+    const historyRef = getUserHistoryRef();
+    if (!historyRef) return;
+
+    console.log(`Migrating ${localHistory.length} test(s) to cloud...`);
+
+    const batch = db.batch();
+    localHistory.forEach((result) => {
+      const docRef = historyRef.doc();
+      batch.set(docRef, {
+        date: result.date,
+        time: result.time,
+        timestamp: result.timestamp,
+        download: result.download,
+        upload: result.upload,
+      });
+    });
+
+    await batch.commit();
+
+    // Clear localStorage after successful migration
+    localStorage.removeItem("speedTestHistory");
+    console.log("Migration complete. Local data cleared.");
+  } catch (error) {
+    console.error("Failed to migrate data:", error);
+  }
+}
+
+// ==========================================
+// History Management (Unified)
+// ==========================================
+
+// Load test history (from Firestore if logged in, else localStorage)
+async function loadHistory() {
+  if (currentUser) {
+    // Load from Firestore
+    testHistory = await loadHistoryFromFirestore();
+  } else {
+    // Load from localStorage
+    const saved = localStorage.getItem("speedTestHistory");
+    if (saved) {
+      try {
+        testHistory = JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load history:", e);
+        testHistory = [];
+      }
+    } else {
       testHistory = [];
     }
   }
   renderHistoryTable();
 }
 
-// Save test history to localStorage
+// Save test history to localStorage (only when logged out)
 function saveHistory() {
-  localStorage.setItem("speedTestHistory", JSON.stringify(testHistory));
+  if (!currentUser) {
+    localStorage.setItem("speedTestHistory", JSON.stringify(testHistory));
+  }
 }
 
 // Add test result to history
-function addToHistory(downloadSpeed, uploadSpeed) {
+async function addToHistory(downloadSpeed, uploadSpeed) {
   const now = new Date();
   const result = {
     date: now.toLocaleDateString(),
@@ -143,12 +513,20 @@ function addToHistory(downloadSpeed, uploadSpeed) {
     upload: parseFloat(uploadSpeed) || 0,
   };
 
+  if (currentUser) {
+    // Save to Firestore
+    const docId = await saveToFirestore(result);
+    if (docId) {
+      result.id = docId;
+    }
+  }
+
   testHistory.unshift(result); // Add to beginning
   if (testHistory.length > 50) {
     testHistory = testHistory.slice(0, 50); // Keep last 50 tests
   }
 
-  saveHistory();
+  saveHistory(); // Only saves to localStorage if not logged in
   renderHistoryTable();
 }
 
@@ -247,10 +625,14 @@ function renderHistoryTable() {
 }
 
 // Clear history
-function clearHistory() {
+async function clearHistory() {
   if (confirm("Are you sure you want to clear all test history?")) {
+    if (currentUser) {
+      // Clear from Firestore
+      await clearFirestoreHistory();
+    }
     testHistory = [];
-    saveHistory();
+    saveHistory(); // Clear localStorage if not logged in
     renderHistoryTable();
   }
 }
@@ -974,8 +1356,51 @@ exportPdfBtn.addEventListener("click", exportReportToPDF);
 // Event listener for Clear History button
 clearHistoryBtn.addEventListener("click", clearHistory);
 
+// ==========================================
+// Auth Event Listeners
+// ==========================================
+
+// Login button opens auth modal
+loginBtn.addEventListener("click", openAuthModal);
+
+// Close auth modal
+closeAuthBtn.addEventListener("click", closeAuthModal);
+authModalBackdrop.addEventListener("click", closeAuthModal);
+
+// Toggle sign in/sign up mode
+authToggleBtn.addEventListener("click", toggleAuthMode);
+
+// Google sign in
+googleSignInBtn.addEventListener("click", signInWithGoogle);
+
+// Email/password form submission
+authForm.addEventListener("submit", handleAuthSubmit);
+
+// User menu toggle
+userMenuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleUserDropdown();
+});
+
+// Logout button
+logoutBtn.addEventListener("click", signOut);
+
+// ==========================================
+// Firebase Auth State Listener
+// ==========================================
+auth.onAuthStateChanged(async (user) => {
+  currentUser = user;
+  updateAuthUI(user);
+
+  if (user && !isAuthInitialized) {
+    // First login - migrate localStorage data
+    await migrateLocalStorageToFirestore();
+    isAuthInitialized = true;
+  }
+
+  // Reload history based on auth state
+  await loadHistory();
+});
+
 // Fetch client info on load
 fetchClientInfo();
-
-// Load history on page load
-loadHistory();
