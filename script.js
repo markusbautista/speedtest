@@ -864,6 +864,8 @@ async function loadHistory() {
   if (currentUser) {
     // Load from Firestore
     testHistory = await loadHistoryFromFirestore();
+    // Also load devices to display device names in history
+    await loadDevices();
   } else {
     // Load from localStorage
     const saved = localStorage.getItem("speedTestHistory");
@@ -989,6 +991,15 @@ function renderHistoryTable() {
       ? (previousTest.download + previousTest.upload) / 2
       : 0;
 
+    // Look up device name from userDevices array
+    let deviceName = "—";
+    if (test.deviceId && userDevices.length > 0) {
+      const device = userDevices.find((d) => d.id === test.deviceId);
+      if (device) {
+        deviceName = device.deviceName || "Unnamed Device";
+      }
+    }
+
     row.innerHTML = `
       <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${
         test.date
@@ -996,6 +1007,7 @@ function renderHistoryTable() {
       <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${
         test.time
       }</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${deviceName}</td>
       <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white tabular-nums">${test.download.toFixed(
         1
       )} Mbps</td>
@@ -1142,8 +1154,18 @@ function updateScores() {
 // Fetch client info using CORS-friendly API
 async function fetchClientInfo() {
   // Try multiple reliable CORS-friendly APIs with fallbacks
-  // Ordered by reliability and rate limit generosity
   const apis = [
+    {
+      url: "https://ipapi.co/json/",
+      parse: (data) => ({
+        ip: data.ip,
+        location:
+          data.city && data.country_name
+            ? `${data.city}, ${data.country_name}`
+            : null,
+        isp: data.org,
+      }),
+    },
     {
       url: "https://api.ipify.org?format=json",
       parse: (data) => ({
@@ -1158,17 +1180,6 @@ async function fetchClientInfo() {
         ip: data.ipString,
         location: null,
         isp: null,
-      }),
-    },
-    {
-      url: "https://ipapi.co/json/",
-      parse: (data) => ({
-        ip: data.ip,
-        location:
-          data.city && data.country_name
-            ? `${data.city}, ${data.country_name}`
-            : null,
-        isp: data.org,
       }),
     },
   ];
