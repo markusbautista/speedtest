@@ -483,7 +483,9 @@ const devicesLoading = document.getElementById("devicesLoading");
 const devicesEmpty = document.getElementById("devicesEmpty");
 const devicesLoggedOut = document.getElementById("devicesLoggedOut");
 const editDeviceModal = document.getElementById("editDeviceModal");
-const editDeviceModalBackdrop = document.getElementById("editDeviceModalBackdrop");
+const editDeviceModalBackdrop = document.getElementById(
+  "editDeviceModalBackdrop"
+);
 const closeEditDeviceBtn = document.getElementById("closeEditDeviceBtn");
 const editDeviceForm = document.getElementById("editDeviceForm");
 const editDeviceName = document.getElementById("editDeviceName");
@@ -683,36 +685,62 @@ function renderDevicesList() {
     const lastSeenDate = device.lastSeen?.toDate
       ? device.lastSeen.toDate()
       : new Date(device.lastSeen);
-    const lastSeenFormatted = lastSeenDate.toLocaleDateString() + " " + lastSeenDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const lastSeenFormatted =
+      lastSeenDate.toLocaleDateString() +
+      " " +
+      lastSeenDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
     const card = document.createElement("div");
-    card.className = `bg-surface-light dark:bg-surface-dark rounded-xl border ${isCurrentDevice ? "border-primary" : "border-gray-100 dark:border-gray-800"} shadow-sm p-6 hover:shadow-md transition-all`;
+    card.className = `bg-surface-light dark:bg-surface-dark rounded-xl border ${
+      isCurrentDevice
+        ? "border-primary"
+        : "border-gray-100 dark:border-gray-800"
+    } shadow-sm p-6 hover:shadow-md transition-all`;
     card.innerHTML = `
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="bg-primary/10 dark:bg-primary/20 p-3 rounded-xl">
-            <span class="material-symbols-outlined text-primary text-2xl">${device.deviceIcon || "devices"}</span>
+            <span class="material-symbols-outlined text-primary text-2xl">${
+              device.deviceIcon || "devices"
+            }</span>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <h3 class="font-bold text-gray-900 dark:text-white truncate">${device.deviceName || "Unnamed Device"}</h3>
-              ${isCurrentDevice ? '<span class="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full">Current</span>' : ""}
+              <h3 class="font-bold text-gray-900 dark:text-white truncate">${
+                device.deviceName || "Unnamed Device"
+              }</h3>
+              ${
+                isCurrentDevice
+                  ? '<span class="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full">Current</span>'
+                  : ""
+              }
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${device.deviceModel || "No model specified"}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${
+              device.deviceModel || "No model specified"
+            }</p>
           </div>
         </div>
-        <button onclick="openEditDeviceModal('${device.id}')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+        <button onclick="openEditDeviceModal('${
+          device.id
+        }')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
           <span class="material-symbols-outlined text-gray-500 text-xl">edit</span>
         </button>
       </div>
       <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-4">
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">IP Address</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 font-mono">${device.ipAddress}</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 font-mono">${
+            device.ipAddress
+          }</p>
         </div>
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tests Run</p>
-          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">${device.testCount || 0}</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">${
+            device.testCount || 0
+          }</p>
         </div>
       </div>
       <div class="mt-3 text-xs text-gray-400 dark:text-gray-500">
@@ -757,7 +785,8 @@ async function saveDeviceChanges(e) {
 
   if (saveDeviceBtn) {
     saveDeviceBtn.disabled = true;
-    saveDeviceBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span> Saving...';
+    saveDeviceBtn.innerHTML =
+      '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span> Saving...';
   }
 
   const success = await updateDevice(editingDeviceId, updates);
@@ -776,7 +805,8 @@ async function saveDeviceChanges(e) {
 
   if (saveDeviceBtn) {
     saveDeviceBtn.disabled = false;
-    saveDeviceBtn.innerHTML = '<span class="material-symbols-outlined text-lg">save</span> Save Changes';
+    saveDeviceBtn.innerHTML =
+      '<span class="material-symbols-outlined text-lg">save</span> Save Changes';
   }
 }
 
@@ -785,13 +815,20 @@ async function confirmDeleteDevice() {
   if (!editingDeviceId) return;
 
   const device = userDevices.find((d) => d.id === editingDeviceId);
-  if (!confirm(`Are you sure you want to delete "${device?.deviceName || "this device"}"? This action cannot be undone.`)) {
+  if (
+    !confirm(
+      `Are you sure you want to delete "${
+        device?.deviceName || "this device"
+      }"? This action cannot be undone.`
+    )
+  ) {
     return;
   }
 
   if (deleteDeviceBtn) {
     deleteDeviceBtn.disabled = true;
-    deleteDeviceBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>';
+    deleteDeviceBtn.innerHTML =
+      '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>';
   }
 
   const success = await deleteDevice(editingDeviceId);
@@ -806,7 +843,8 @@ async function confirmDeleteDevice() {
 
   if (deleteDeviceBtn) {
     deleteDeviceBtn.disabled = false;
-    deleteDeviceBtn.innerHTML = '<span class="material-symbols-outlined text-lg">delete</span>';
+    deleteDeviceBtn.innerHTML =
+      '<span class="material-symbols-outlined text-lg">delete</span>';
   }
 }
 
@@ -1059,7 +1097,8 @@ function updateResults() {
   if (jit && jitter) jitter.textContent = formatLatency(jit);
 
   const downLoadedLat = results.getDownLoadedLatency();
-  if (downLoadedLat && loadedLatency) loadedLatency.textContent = formatLatency(downLoadedLat);
+  if (downLoadedLat && loadedLatency)
+    loadedLatency.textContent = formatLatency(downLoadedLat);
 
   const summary = results.getSummary();
   if (summary?.serverLocations?.length > 0 && serverLocation) {
@@ -1150,7 +1189,8 @@ async function fetchClientInfo() {
       // Update UI elements if they exist (index page only)
       if (info.ip && clientIp) clientIp.textContent = info.ip;
       if (info.isp && clientIsp) clientIsp.textContent = info.isp;
-      if (info.location && serverLocation) serverLocation.textContent = info.location;
+      if (info.location && serverLocation)
+        serverLocation.textContent = info.location;
 
       console.log("✓ Client info loaded from:", api.url);
       return; // Success, exit

@@ -224,8 +224,13 @@
           class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
         >
           <div class="flex flex-col items-center text-center gap-4">
-            <span class="material-symbols-outlined text-primary text-4xl animate-spin">progress_activity</span>
-            <p class="text-gray-500 dark:text-gray-400">Loading your devices...</p>
+            <span
+              class="material-symbols-outlined text-primary text-4xl animate-spin"
+              >progress_activity</span
+            >
+            <p class="text-gray-500 dark:text-gray-400">
+              Loading your devices...
+            </p>
           </div>
         </div>
 
@@ -236,14 +241,17 @@
         >
           <div class="flex flex-col items-center text-center gap-6">
             <div class="bg-primary/10 p-6 rounded-2xl">
-              <span class="material-symbols-outlined text-primary text-6xl">login</span>
+              <span class="material-symbols-outlined text-primary text-6xl"
+                >login</span
+              >
             </div>
             <div class="space-y-2">
               <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
                 Sign In Required
               </h2>
               <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                Please sign in to view and manage your devices. Your devices are automatically detected when you run speed tests.
+                Please sign in to view and manage your devices. Your devices are
+                automatically detected when you run speed tests.
               </p>
             </div>
             <button
@@ -263,14 +271,17 @@
         >
           <div class="flex flex-col items-center text-center gap-6">
             <div class="bg-primary/10 p-6 rounded-2xl">
-              <span class="material-symbols-outlined text-primary text-6xl">devices</span>
+              <span class="material-symbols-outlined text-primary text-6xl"
+                >devices</span
+              >
             </div>
             <div class="space-y-2">
               <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
                 No Devices Yet
               </h2>
               <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                Run your first speed test to automatically register this device. Each unique IP address will be saved as a separate device.
+                Run your first speed test to automatically register this device.
+                Each unique IP address will be saved as a separate device.
               </p>
             </div>
             <a
@@ -284,17 +295,29 @@
         </div>
 
         <!-- Devices Grid -->
-        <div id="devicesGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div
+          id="devicesGrid"
+          class="hidden grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           <!-- Device cards will be rendered here by JavaScript -->
         </div>
 
         <!-- Info Note -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+        <div
+          class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+        >
           <div class="flex items-start gap-3">
-            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl mt-0.5">info</span>
+            <span
+              class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl mt-0.5"
+              >info</span
+            >
             <div class="text-sm text-blue-700 dark:text-blue-300">
               <p class="font-medium">How device tracking works</p>
-              <p class="mt-1 text-blue-600 dark:text-blue-400">Devices are automatically detected based on your IP address when you run a speed test. You can customize the name and model for easy identification.</p>
+              <p class="mt-1 text-blue-600 dark:text-blue-400">
+                Devices are automatically detected based on your IP address when
+                you run a speed test. You can customize the name and model for
+                easy identification.
+              </p>
             </div>
           </div>
         </div>
@@ -512,18 +535,26 @@
           <form id="editDeviceForm" class="p-6 space-y-5">
             <!-- IP Address (Read Only) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
                 IP Address
               </label>
-              <div class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-400 font-mono text-sm">
+              <div
+                class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-400 font-mono text-sm"
+              >
                 <span id="editDeviceIp">—</span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">IP address cannot be changed</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                IP address cannot be changed
+              </p>
             </div>
 
             <!-- Device Name -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
                 Device Name
               </label>
               <input
@@ -538,8 +569,11 @@
 
             <!-- Device Model -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                Device Model <span class="text-gray-400 font-normal">(optional)</span>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Device Model
+                <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -551,7 +585,9 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div
+              class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700"
+            >
               <button
                 type="button"
                 id="deleteDeviceBtn"
