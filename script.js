@@ -953,6 +953,11 @@ function getComparisonClass(current, compare, inverse = false) {
 
 // Render history table
 function renderHistoryTable() {
+  // Guard clause: Check if required DOM elements exist (they only exist on history.html)
+  if (!historyTableBody || !emptyHistoryRow) {
+    return; // Exit silently if we're not on the history page
+  }
+
   if (testHistory.length === 0) {
     emptyHistoryRow.classList.remove("hidden");
     // Remove any existing data rows
@@ -1872,8 +1877,10 @@ auth.onAuthStateChanged(async (user) => {
     isAuthInitialized = true;
   }
 
-  // Reload history based on auth state
-  await loadHistory();
+  // Reload history based on auth state (only if we're on a page with history table)
+  if (historyTableBody && emptyHistoryRow) {
+    await loadHistory();
+  }
 
   // Load and render devices (for devices page)
   if (devicesGrid) {
