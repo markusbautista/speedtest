@@ -673,37 +673,37 @@ function updateResults() {
   const results = speedTest.results;
 
   const down = results.getDownloadBandwidth();
-  if (down) {
+  if (down && downloadSpeed) {
     downloadSpeed.textContent = formatSpeed(down);
     const downPercent = Math.min((down / 1_000_000_000) * 100, 100);
-    downloadProgress.style.width = `${downPercent}%`;
+    if (downloadProgress) downloadProgress.style.width = `${downPercent}%`;
   }
 
   const up = results.getUploadBandwidth();
-  if (up) {
+  if (up && uploadSpeed) {
     uploadSpeed.textContent = formatSpeed(up);
     const upPercent = Math.min((up / 500_000_000) * 100, 100);
-    uploadProgress.style.width = `${upPercent}%`;
+    if (uploadProgress) uploadProgress.style.width = `${upPercent}%`;
   }
 
   const lat = results.getUnloadedLatency();
-  if (lat) latency.textContent = formatLatency(lat);
+  if (lat && latency) latency.textContent = formatLatency(lat);
 
   const jit = results.getUnloadedJitter();
-  if (jit) jitter.textContent = formatLatency(jit);
+  if (jit && jitter) jitter.textContent = formatLatency(jit);
 
   const downLoadedLat = results.getDownLoadedLatency();
-  if (downLoadedLat) loadedLatency.textContent = formatLatency(downLoadedLat);
+  if (downLoadedLat && loadedLatency) loadedLatency.textContent = formatLatency(downLoadedLat);
 
   const summary = results.getSummary();
-  if (summary?.serverLocations?.length > 0) {
+  if (summary?.serverLocations?.length > 0 && serverLocation) {
     serverLocation.textContent = summary.serverLocations.join(", ");
   }
   // Update client info from speed test if available
-  if (summary?.clientIp && clientIp.textContent === "—") {
+  if (summary?.clientIp && clientIp && clientIp.textContent === "—") {
     clientIp.textContent = summary.clientIp;
   }
-  if (summary?.asOrganization) {
+  if (summary?.asOrganization && clientIsp) {
     clientIsp.textContent = summary.asOrganization;
   }
 }
@@ -714,21 +714,21 @@ function updateScores() {
   const scores = speedTest.results.getScores();
   if (!scores) return;
 
-  if (scores.streaming !== undefined) {
+  if (scores.streaming !== undefined && streamingBadge && streamingDesc) {
     const rating = getQualityRating(scores.streaming.points);
     streamingBadge.textContent = rating.label;
     streamingBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
     streamingDesc.textContent = getStreamingDesc(scores.streaming.points);
   }
 
-  if (scores.gaming !== undefined) {
+  if (scores.gaming !== undefined && gamingBadge && gamingDesc) {
     const rating = getQualityRating(scores.gaming.points);
     gamingBadge.textContent = rating.label;
     gamingBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
     gamingDesc.textContent = getGamingDesc(scores.gaming.points);
   }
 
-  if (scores.rtc !== undefined) {
+  if (scores.rtc !== undefined && rtcBadge && rtcDesc) {
     const rating = getQualityRating(scores.rtc.points);
     rtcBadge.textContent = rating.label;
     rtcBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${rating.class}`;
@@ -738,6 +738,11 @@ function updateScores() {
 
 // Fetch client info using CORS-friendly API
 async function fetchClientInfo() {
+  // Check if the necessary elements exist (only on index page)
+  if (!clientIp && !clientIsp && !serverLocation) {
+    return; // Not on a page that displays this info
+  }
+
   // Try multiple reliable CORS-friendly APIs with fallbacks
   const apis = [
     {
@@ -776,9 +781,9 @@ async function fetchClientInfo() {
       const data = await response.json();
       const info = await api.parse(data);
 
-      if (info.ip) clientIp.textContent = info.ip;
-      if (info.isp) clientIsp.textContent = info.isp;
-      if (info.location) serverLocation.textContent = info.location;
+      if (info.ip && clientIp) clientIp.textContent = info.ip;
+      if (info.isp && clientIsp) clientIsp.textContent = info.isp;
+      if (info.location && serverLocation) serverLocation.textContent = info.location;
 
       console.log("✓ Client info loaded from:", api.url);
       return; // Success, exit
@@ -794,28 +799,40 @@ async function fetchClientInfo() {
 
 // Reset UI to initial state
 function resetUI() {
-  downloadSpeed.textContent = "—";
-  uploadSpeed.textContent = "—";
-  downloadProgress.style.width = "0%";
-  uploadProgress.style.width = "0%";
-  latency.textContent = "—";
-  jitter.textContent = "—";
-  loadedLatency.textContent = "—";
+  if (downloadSpeed) downloadSpeed.textContent = "—";
+  if (uploadSpeed) uploadSpeed.textContent = "—";
+  if (downloadProgress) downloadProgress.style.width = "0%";
+  if (uploadProgress) uploadProgress.style.width = "0%";
+  if (latency) latency.textContent = "—";
+  if (jitter) jitter.textContent = "—";
+  if (loadedLatency) loadedLatency.textContent = "—";
 
-  streamingBadge.textContent = "—";
-  streamingBadge.className =
-    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-  streamingDesc.textContent = "Run a test to see your streaming quality.";
+  if (streamingBadge) {
+    streamingBadge.textContent = "—";
+    streamingBadge.className =
+      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+  }
+  if (streamingDesc) {
+    streamingDesc.textContent = "Run a test to see your streaming quality.";
+  }
 
-  gamingBadge.textContent = "—";
-  gamingBadge.className =
-    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-  gamingDesc.textContent = "Run a test to see your gaming quality.";
+  if (gamingBadge) {
+    gamingBadge.textContent = "—";
+    gamingBadge.className =
+      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+  }
+  if (gamingDesc) {
+    gamingDesc.textContent = "Run a test to see your gaming quality.";
+  }
 
-  rtcBadge.textContent = "—";
-  rtcBadge.className =
-    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-  rtcDesc.textContent = "Run a test to see your video call quality.";
+  if (rtcBadge) {
+    rtcBadge.textContent = "—";
+    rtcBadge.className =
+      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+  }
+  if (rtcDesc) {
+    rtcDesc.textContent = "Run a test to see your video call quality.";
+  }
 }
 
 // Initialize and start speed test
@@ -887,35 +904,43 @@ function startSpeedTest() {
   };
 }
 
-// Event listeners
-startBtn.addEventListener("click", startSpeedTest);
+// Event listeners (only if elements exist on this page)
+if (startBtn) {
+  startBtn.addEventListener("click", startSpeedTest);
+}
 
 // Copy server location
-copyServerLocation.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const text = serverLocation.textContent;
-  if (text && text !== "—") {
-    copyToClipboard(text, copyServerLocation);
-  }
-});
+if (copyServerLocation) {
+  copyServerLocation.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const text = serverLocation.textContent;
+    if (text && text !== "—") {
+      copyToClipboard(text, copyServerLocation);
+    }
+  });
+}
 
 // Copy client IP
-copyClientIp.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const text = clientIp.textContent;
-  if (text && text !== "—") {
-    copyToClipboard(text, copyClientIp);
-  }
-});
+if (copyClientIp) {
+  copyClientIp.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const text = clientIp.textContent;
+    if (text && text !== "—") {
+      copyToClipboard(text, copyClientIp);
+    }
+  });
+}
 
 // Copy ISP
-copyIsp.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const text = clientIsp.textContent;
-  if (text && text !== "—") {
-    copyToClipboard(text, copyIsp);
-  }
-});
+if (copyIsp) {
+  copyIsp.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const text = clientIsp.textContent;
+    if (text && text !== "—") {
+      copyToClipboard(text, copyIsp);
+    }
+  });
+}
 
 // Settings modal functions
 function openSettingsModal() {
@@ -1127,28 +1152,46 @@ function resetSettings() {
 }
 
 // Settings modal event listeners
-settingsBtn.addEventListener("click", openSettingsModal);
-closeSettingsBtn.addEventListener("click", closeSettingsModal);
-modalBackdrop.addEventListener("click", closeSettingsModal);
-resetSettingsBtn.addEventListener("click", resetSettings);
-saveSettingsBtn.addEventListener("click", () => {
-  closeSettingsModal();
-  // Settings are read when test starts, no need to save separately
-});
+if (settingsBtn) {
+  settingsBtn.addEventListener("click", openSettingsModal);
+}
+if (closeSettingsBtn) {
+  closeSettingsBtn.addEventListener("click", closeSettingsModal);
+}
+if (modalBackdrop) {
+  modalBackdrop.addEventListener("click", closeSettingsModal);
+}
+if (resetSettingsBtn) {
+  resetSettingsBtn.addEventListener("click", resetSettings);
+}
+if (saveSettingsBtn) {
+  saveSettingsBtn.addEventListener("click", () => {
+    closeSettingsModal();
+    // Settings are read when test starts, no need to save separately
+  });
+}
 
 // Report modal event listeners
-viewReportBtn.addEventListener("click", openReportModal);
-closeReportBtn.addEventListener("click", closeReportModal);
-closeReportBtn2.addEventListener("click", closeReportModal);
-reportModalBackdrop.addEventListener("click", closeReportModal);
+if (viewReportBtn) {
+  viewReportBtn.addEventListener("click", openReportModal);
+}
+if (closeReportBtn) {
+  closeReportBtn.addEventListener("click", closeReportModal);
+}
+if (closeReportBtn2) {
+  closeReportBtn2.addEventListener("click", closeReportModal);
+}
+if (reportModalBackdrop) {
+  reportModalBackdrop.addEventListener("click", closeReportModal);
+}
 
 // Close modal on Escape key
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    if (!settingsModal.classList.contains("hidden")) {
+    if (settingsModal && !settingsModal.classList.contains("hidden")) {
       closeSettingsModal();
     }
-    if (!reportModal.classList.contains("hidden")) {
+    if (reportModal && !reportModal.classList.contains("hidden")) {
       closeReportModal();
     }
   }
@@ -1157,22 +1200,24 @@ document.addEventListener("keydown", (e) => {
 // Dark mode toggle functionality
 function updateDarkModeIcon() {
   const isDark = document.documentElement.classList.contains("dark");
-  darkModeIcon.textContent = isDark ? "light_mode" : "dark_mode";
+  if (darkModeIcon) {
+    darkModeIcon.textContent = isDark ? "light_mode" : "dark_mode";
+  }
 }
 
 function toggleDarkMode() {
   document.documentElement.classList.toggle("dark");
   const isDark = document.documentElement.classList.contains("dark");
-  localStorage.setItem("darkMode", isDark ? "dark" : "light");
+  localStorage.setItem("theme", isDark ? "dark" : "light");
   updateDarkModeIcon();
 }
 
 // Initialize dark mode from localStorage
 function initDarkMode() {
-  const savedMode = localStorage.getItem("darkMode");
+  const savedTheme = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-  if (savedMode === "dark" || (!savedMode && prefersDark)) {
+  if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
     document.documentElement.classList.add("dark");
   } else {
     document.documentElement.classList.remove("dark");
@@ -1180,7 +1225,9 @@ function initDarkMode() {
   updateDarkModeIcon();
 }
 
-darkModeToggle.addEventListener("click", toggleDarkMode);
+if (darkModeToggle) {
+  darkModeToggle.addEventListener("click", toggleDarkMode);
+}
 initDarkMode();
 
 // PDF Export Function
@@ -1351,39 +1398,59 @@ function exportReportToPDF() {
 }
 
 // Event listener for Export PDF button
-exportPdfBtn.addEventListener("click", exportReportToPDF);
+if (exportPdfBtn) {
+  exportPdfBtn.addEventListener("click", exportReportToPDF);
+}
 
 // Event listener for Clear History button
-clearHistoryBtn.addEventListener("click", clearHistory);
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener("click", clearHistory);
+}
 
 // ==========================================
 // Auth Event Listeners
 // ==========================================
 
 // Login button opens auth modal
-loginBtn.addEventListener("click", openAuthModal);
+if (loginBtn) {
+  loginBtn.addEventListener("click", openAuthModal);
+}
 
 // Close auth modal
-closeAuthBtn.addEventListener("click", closeAuthModal);
-authModalBackdrop.addEventListener("click", closeAuthModal);
+if (closeAuthBtn) {
+  closeAuthBtn.addEventListener("click", closeAuthModal);
+}
+if (authModalBackdrop) {
+  authModalBackdrop.addEventListener("click", closeAuthModal);
+}
 
 // Toggle sign in/sign up mode
-authToggleBtn.addEventListener("click", toggleAuthMode);
+if (authToggleBtn) {
+  authToggleBtn.addEventListener("click", toggleAuthMode);
+}
 
 // Google sign in
-googleSignInBtn.addEventListener("click", signInWithGoogle);
+if (googleSignInBtn) {
+  googleSignInBtn.addEventListener("click", signInWithGoogle);
+}
 
 // Email/password form submission
-authForm.addEventListener("submit", handleAuthSubmit);
+if (authForm) {
+  authForm.addEventListener("submit", handleAuthSubmit);
+}
 
 // User menu toggle
-userMenuBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  toggleUserDropdown();
-});
+if (userMenuBtn) {
+  userMenuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleUserDropdown();
+  });
+}
 
 // Logout button
-logoutBtn.addEventListener("click", signOut);
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", signOut);
+}
 
 // ==========================================
 // Firebase Auth State Listener

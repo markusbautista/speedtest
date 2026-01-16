@@ -5,6 +5,20 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Speed Test by marCODES</title>
+    <script>
+      // Initialize dark mode immediately to prevent flash
+      (function () {
+        const savedTheme = localStorage.getItem("theme");
+        if (
+          savedTheme === "dark" ||
+          (!savedTheme &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
+          document.documentElement.classList.remove("light");
+        }
+      })();
+    </script>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
     <link
@@ -73,7 +87,10 @@
       class="w-full border-b border-gray-200 dark:border-gray-800 bg-surface-light dark:bg-surface-dark px-6 py-4 sticky top-0 z-50"
     >
       <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <a href="index.html" class="flex items-center gap-2 sm:gap-3 group cursor-pointer">
+        <a
+          href="index.html"
+          class="flex items-center gap-2 sm:gap-3 group cursor-pointer"
+        >
           <div
             class="bg-primary/10 dark:bg-primary/20 p-1.5 sm:p-2 rounded-lg group-hover:bg-primary/20 transition-colors"
           >
@@ -90,10 +107,26 @@
         </a>
 
         <nav class="hidden md:flex items-center gap-8">
-          <a class="text-sm font-medium text-primary border-b-2 border-primary transition-colors" href="index.html">Speedtest</a>
-          <a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="devices.html">Devices</a>
-          <a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="history.html">History</a>
-          <a class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors" href="settings.html">Settings</a>
+          <a
+            class="text-sm font-medium text-primary border-b-2 border-primary transition-colors"
+            href="index.html"
+            >Speedtest</a
+          >
+          <a
+            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
+            href="devices.html"
+            >Devices</a
+          >
+          <a
+            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
+            href="history.html"
+            >History</a
+          >
+          <a
+            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors"
+            href="settings.html"
+            >Settings</a
+          >
         </nav>
 
         <div class="flex items-center gap-2 sm:gap-4">
