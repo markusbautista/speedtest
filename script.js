@@ -8,20 +8,13 @@ import jsPDF from "https://esm.sh/jspdf@2.5.1";
 // TODO: Replace with your Firebase project config
 const firebaseConfig = {
   apiKey: "AIzaSyBRlUfrnqJJsssNinohGo7QxR8ZjAeXT-c",
-
   authDomain: "speedtest-efd44.firebaseapp.com",
-
   databaseURL:
     "https://speedtest-efd44-default-rtdb.asia-southeast1.firebasedatabase.app",
-
   projectId: "speedtest-efd44",
-
   storageBucket: "speedtest-efd44.firebasestorage.app",
-
   messagingSenderId: "352772397442",
-
   appId: "1:352772397442:web:899bd6e1c989f51d94579b",
-
   measurementId: "G-DSX41B1CMP",
 };
 
@@ -1149,18 +1142,8 @@ function updateScores() {
 // Fetch client info using CORS-friendly API
 async function fetchClientInfo() {
   // Try multiple reliable CORS-friendly APIs with fallbacks
+  // Ordered by reliability and rate limit generosity
   const apis = [
-    {
-      url: "https://ipapi.co/json/",
-      parse: (data) => ({
-        ip: data.ip,
-        location:
-          data.city && data.country_name
-            ? `${data.city}, ${data.country_name}`
-            : null,
-        isp: data.org,
-      }),
-    },
     {
       url: "https://api.ipify.org?format=json",
       parse: (data) => ({
@@ -1175,6 +1158,17 @@ async function fetchClientInfo() {
         ip: data.ipString,
         location: null,
         isp: null,
+      }),
+    },
+    {
+      url: "https://ipapi.co/json/",
+      parse: (data) => ({
+        ip: data.ip,
+        location:
+          data.city && data.country_name
+            ? `${data.city}, ${data.country_name}`
+            : null,
+        isp: data.org,
       }),
     },
   ];
