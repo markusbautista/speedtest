@@ -218,41 +218,83 @@
           </div>
         </div>
 
-        <!-- Coming Soon Card -->
+        <!-- Loading State -->
         <div
+          id="devicesLoading"
           class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
+        >
+          <div class="flex flex-col items-center text-center gap-4">
+            <span class="material-symbols-outlined text-primary text-4xl animate-spin">progress_activity</span>
+            <p class="text-gray-500 dark:text-gray-400">Loading your devices...</p>
+          </div>
+        </div>
+
+        <!-- Logged Out State -->
+        <div
+          id="devicesLoggedOut"
+          class="hidden bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
         >
           <div class="flex flex-col items-center text-center gap-6">
             <div class="bg-primary/10 p-6 rounded-2xl">
-              <span class="material-symbols-outlined text-primary text-6xl"
-                >devices</span
-              >
+              <span class="material-symbols-outlined text-primary text-6xl">login</span>
             </div>
             <div class="space-y-2">
               <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Coming Soon
+                Sign In Required
               </h2>
               <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                Device management features are currently under development. Soon
-                you'll be able to track and compare speed tests across all your
-                devices in one place.
+                Please sign in to view and manage your devices. Your devices are automatically detected when you run speed tests.
               </p>
             </div>
-            <div class="flex gap-4 mt-4">
-              <a
-                href="index.html"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
-              >
-                <span class="material-symbols-outlined">speed</span>
-                Run Speed Test
-              </a>
-              <a
-                href="history.html"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-lg transition-colors"
-              >
-                <span class="material-symbols-outlined">history</span>
-                View History
-              </a>
+            <button
+              onclick="document.getElementById('loginBtn').click()"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
+            >
+              <span class="material-symbols-outlined">login</span>
+              Sign In
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          id="devicesEmpty"
+          class="hidden bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
+        >
+          <div class="flex flex-col items-center text-center gap-6">
+            <div class="bg-primary/10 p-6 rounded-2xl">
+              <span class="material-symbols-outlined text-primary text-6xl">devices</span>
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                No Devices Yet
+              </h2>
+              <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                Run your first speed test to automatically register this device. Each unique IP address will be saved as a separate device.
+              </p>
+            </div>
+            <a
+              href="index.html"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
+            >
+              <span class="material-symbols-outlined">speed</span>
+              Run Speed Test
+            </a>
+          </div>
+        </div>
+
+        <!-- Devices Grid -->
+        <div id="devicesGrid" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Device cards will be rendered here by JavaScript -->
+        </div>
+
+        <!-- Info Note -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+          <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl mt-0.5">info</span>
+            <div class="text-sm text-blue-700 dark:text-blue-300">
+              <p class="font-medium">How device tracking works</p>
+              <p class="mt-1 text-blue-600 dark:text-blue-400">Devices are automatically detected based on your IP address when you run a speed test. You can customize the name and model for easy identification.</p>
             </div>
           </div>
         </div>
@@ -429,6 +471,105 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Device Modal -->
+    <div id="editDeviceModal" class="fixed inset-0 z-[100] hidden">
+      <!-- Backdrop with blur -->
+      <div
+        id="editDeviceModalBackdrop"
+        class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      ></div>
+
+      <!-- Modal Content -->
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div
+          class="relative bg-white dark:bg-surface-dark rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        >
+          <!-- Modal Header -->
+          <div
+            class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center gap-3">
+              <div class="bg-primary/10 p-2 rounded-lg">
+                <span class="material-symbols-outlined text-primary">edit</span>
+              </div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                Edit Device
+              </h2>
+            </div>
+            <button
+              id="closeEditDeviceBtn"
+              class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <span class="material-symbols-outlined text-gray-500">close</span>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <form id="editDeviceForm" class="p-6 space-y-5">
+            <!-- IP Address (Read Only) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                IP Address
+              </label>
+              <div class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-400 font-mono text-sm">
+                <span id="editDeviceIp">—</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">IP address cannot be changed</p>
+            </div>
+
+            <!-- Device Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                Device Name
+              </label>
+              <input
+                type="text"
+                id="editDeviceName"
+                required
+                maxlength="50"
+                class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="e.g., My Laptop, Office PC"
+              />
+            </div>
+
+            <!-- Device Model -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                Device Model <span class="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                id="editDeviceModel"
+                maxlength="50"
+                class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="e.g., MacBook Pro 14, Dell XPS 15"
+              />
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                id="deleteDeviceBtn"
+                class="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              >
+                <span class="material-symbols-outlined text-lg">delete</span>
+                <span class="text-sm font-medium">Delete</span>
+              </button>
+              <button
+                type="submit"
+                id="saveDeviceBtn"
+                class="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
+              >
+                <span class="material-symbols-outlined text-lg">save</span>
+                Save Changes
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

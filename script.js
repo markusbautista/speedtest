@@ -470,6 +470,361 @@ async function migrateLocalStorageToFirestore() {
 }
 
 // ==========================================
+// Device Management Functions
+// ==========================================
+
+// Store for current IP address (fetched on page load)
+let currentIpAddress = null;
+let userDevices = [];
+
+// Device page DOM elements
+const devicesGrid = document.getElementById("devicesGrid");
+const devicesLoading = document.getElementById("devicesLoading");
+const devicesEmpty = document.getElementById("devicesEmpty");
+const devicesLoggedOut = document.getElementById("devicesLoggedOut");
+const editDeviceModal = document.getElementById("editDeviceModal");
+const editDeviceModalBackdrop = document.getElementById("editDeviceModalBackdrop");
+const closeEditDeviceBtn = document.getElementById("closeEditDeviceBtn");
+const editDeviceForm = document.getElementById("editDeviceForm");
+const editDeviceName = document.getElementById("editDeviceName");
+const editDeviceModel = document.getElementById("editDeviceModel");
+const editDeviceIp = document.getElementById("editDeviceIp");
+const saveDeviceBtn = document.getElementById("saveDeviceBtn");
+const deleteDeviceBtn = document.getElementById("deleteDeviceBtn");
+
+let editingDeviceId = null;
+
+// Get user's devices collection reference
+function getUserDevicesRef() {
+  if (!currentUser) return null;
+  return db.collection("users").doc(currentUser.uid).collection("devices");
+}
+
+// Detect device type from user agent
+function detectDeviceType() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/tablet|ipad|playbook|silk/i.test(ua)) {
+    return { type: "tablet", icon: "tablet" };
+  }
+  if (/mobile|iphone|ipod|android.*mobile|windows phone|blackberry/i.test(ua)) {
+    return { type: "mobile", icon: "smartphone" };
+  }
+  return { type: "desktop", icon: "computer" };
+}
+
+// Get default device name based on browser/OS
+function getDefaultDeviceName() {
+  const ua = navigator.userAgent;
+  let browser = "Browser";
+  let os = "Device";
+
+  // Detect browser
+  if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Edg")) browser = "Edge";
+  else if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Safari")) browser = "Safari";
+
+  // Detect OS
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Mac")) os = "Mac";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+  return `${browser} on ${os}`;
+}
+
+// Find or create device by IP address
+async function getOrCreateDevice(ipAddress) {
+  if (!currentUser || !ipAddress) return null;
+
+  const devicesRef = getUserDevicesRef();
+  if (!devicesRef) return null;
+
+  try {
+    // Check if device with this IP already exists
+    const snapshot = await devicesRef.where("ipAddress", "==", ipAddress).get();
+
+    if (!snapshot.empty) {
+      // Device exists, update lastSeen
+      const doc = snapshot.docs[0];
+      await doc.ref.update({
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      return { id: doc.id, ...doc.data() };
+    }
+
+    // Create new device
+    const deviceInfo = detectDeviceType();
+    const newDevice = {
+      ipAddress: ipAddress,
+      deviceName: getDefaultDeviceName(),
+      deviceModel: "",
+      deviceType: deviceInfo.type,
+      deviceIcon: deviceInfo.icon,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      testCount: 0,
+    };
+
+    const docRef = await devicesRef.add(newDevice);
+    console.log("New device registered:", ipAddress);
+    return { id: docRef.id, ...newDevice };
+  } catch (error) {
+    console.error("Failed to get or create device:", error);
+    return null;
+  }
+}
+
+// Load all user devices
+async function loadDevices() {
+  if (!currentUser) {
+    userDevices = [];
+    return [];
+  }
+
+  const devicesRef = getUserDevicesRef();
+  if (!devicesRef) return [];
+
+  try {
+    const snapshot = await devicesRef.orderBy("lastSeen", "desc").get();
+    userDevices = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    return userDevices;
+  } catch (error) {
+    console.error("Failed to load devices:", error);
+    return [];
+  }
+}
+
+// Update device details
+async function updateDevice(deviceId, updates) {
+  if (!currentUser) return false;
+
+  const devicesRef = getUserDevicesRef();
+  if (!devicesRef) return false;
+
+  try {
+    await devicesRef.doc(deviceId).update(updates);
+    return true;
+  } catch (error) {
+    console.error("Failed to update device:", error);
+    return false;
+  }
+}
+
+// Delete a device
+async function deleteDevice(deviceId) {
+  if (!currentUser) return false;
+
+  const devicesRef = getUserDevicesRef();
+  if (!devicesRef) return false;
+
+  try {
+    await devicesRef.doc(deviceId).delete();
+    return true;
+  } catch (error) {
+    console.error("Failed to delete device:", error);
+    return false;
+  }
+}
+
+// Increment device test count
+async function incrementDeviceTestCount(deviceId) {
+  if (!currentUser || !deviceId) return;
+
+  const devicesRef = getUserDevicesRef();
+  if (!devicesRef) return;
+
+  try {
+    await devicesRef.doc(deviceId).update({
+      testCount: firebase.firestore.FieldValue.increment(1),
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Failed to increment test count:", error);
+  }
+}
+
+// Render devices list on devices page
+function renderDevicesList() {
+  if (!devicesGrid) return; // Not on devices page
+
+  // Show appropriate state
+  if (!currentUser) {
+    if (devicesLoading) devicesLoading.classList.add("hidden");
+    if (devicesEmpty) devicesEmpty.classList.add("hidden");
+    if (devicesGrid) devicesGrid.classList.add("hidden");
+    if (devicesLoggedOut) devicesLoggedOut.classList.remove("hidden");
+    return;
+  }
+
+  if (devicesLoggedOut) devicesLoggedOut.classList.add("hidden");
+
+  if (userDevices.length === 0) {
+    if (devicesLoading) devicesLoading.classList.add("hidden");
+    if (devicesGrid) devicesGrid.classList.add("hidden");
+    if (devicesEmpty) devicesEmpty.classList.remove("hidden");
+    return;
+  }
+
+  if (devicesLoading) devicesLoading.classList.add("hidden");
+  if (devicesEmpty) devicesEmpty.classList.add("hidden");
+  if (devicesGrid) devicesGrid.classList.remove("hidden");
+
+  // Clear existing cards
+  devicesGrid.innerHTML = "";
+
+  // Render each device
+  userDevices.forEach((device) => {
+    const isCurrentDevice = device.ipAddress === currentIpAddress;
+    const lastSeenDate = device.lastSeen?.toDate
+      ? device.lastSeen.toDate()
+      : new Date(device.lastSeen);
+    const lastSeenFormatted = lastSeenDate.toLocaleDateString() + " " + lastSeenDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const card = document.createElement("div");
+    card.className = `bg-surface-light dark:bg-surface-dark rounded-xl border ${isCurrentDevice ? "border-primary" : "border-gray-100 dark:border-gray-800"} shadow-sm p-6 hover:shadow-md transition-all`;
+    card.innerHTML = `
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="bg-primary/10 dark:bg-primary/20 p-3 rounded-xl">
+            <span class="material-symbols-outlined text-primary text-2xl">${device.deviceIcon || "devices"}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-gray-900 dark:text-white truncate">${device.deviceName || "Unnamed Device"}</h3>
+              ${isCurrentDevice ? '<span class="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full">Current</span>' : ""}
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${device.deviceModel || "No model specified"}</p>
+          </div>
+        </div>
+        <button onclick="openEditDeviceModal('${device.id}')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+          <span class="material-symbols-outlined text-gray-500 text-xl">edit</span>
+        </button>
+      </div>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">IP Address</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 font-mono">${device.ipAddress}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tests Run</p>
+          <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">${device.testCount || 0}</p>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+        Last seen: ${lastSeenFormatted}
+      </div>
+    `;
+    devicesGrid.appendChild(card);
+  });
+}
+
+// Open edit device modal
+window.openEditDeviceModal = function (deviceId) {
+  const device = userDevices.find((d) => d.id === deviceId);
+  if (!device || !editDeviceModal) return;
+
+  editingDeviceId = deviceId;
+  if (editDeviceName) editDeviceName.value = device.deviceName || "";
+  if (editDeviceModel) editDeviceModel.value = device.deviceModel || "";
+  if (editDeviceIp) editDeviceIp.textContent = device.ipAddress;
+
+  editDeviceModal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+};
+
+// Close edit device modal
+function closeEditDeviceModal() {
+  if (!editDeviceModal) return;
+  editDeviceModal.classList.add("hidden");
+  document.body.style.overflow = "";
+  editingDeviceId = null;
+}
+
+// Save device changes
+async function saveDeviceChanges(e) {
+  if (e) e.preventDefault();
+  if (!editingDeviceId) return;
+
+  const updates = {
+    deviceName: editDeviceName?.value?.trim() || "Unnamed Device",
+    deviceModel: editDeviceModel?.value?.trim() || "",
+  };
+
+  if (saveDeviceBtn) {
+    saveDeviceBtn.disabled = true;
+    saveDeviceBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span> Saving...';
+  }
+
+  const success = await updateDevice(editingDeviceId, updates);
+
+  if (success) {
+    // Update local array
+    const deviceIndex = userDevices.findIndex((d) => d.id === editingDeviceId);
+    if (deviceIndex !== -1) {
+      userDevices[deviceIndex] = { ...userDevices[deviceIndex], ...updates };
+    }
+    renderDevicesList();
+    closeEditDeviceModal();
+  } else {
+    alert("Failed to save changes. Please try again.");
+  }
+
+  if (saveDeviceBtn) {
+    saveDeviceBtn.disabled = false;
+    saveDeviceBtn.innerHTML = '<span class="material-symbols-outlined text-lg">save</span> Save Changes';
+  }
+}
+
+// Delete device with confirmation
+async function confirmDeleteDevice() {
+  if (!editingDeviceId) return;
+
+  const device = userDevices.find((d) => d.id === editingDeviceId);
+  if (!confirm(`Are you sure you want to delete "${device?.deviceName || "this device"}"? This action cannot be undone.`)) {
+    return;
+  }
+
+  if (deleteDeviceBtn) {
+    deleteDeviceBtn.disabled = true;
+    deleteDeviceBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>';
+  }
+
+  const success = await deleteDevice(editingDeviceId);
+
+  if (success) {
+    userDevices = userDevices.filter((d) => d.id !== editingDeviceId);
+    renderDevicesList();
+    closeEditDeviceModal();
+  } else {
+    alert("Failed to delete device. Please try again.");
+  }
+
+  if (deleteDeviceBtn) {
+    deleteDeviceBtn.disabled = false;
+    deleteDeviceBtn.innerHTML = '<span class="material-symbols-outlined text-lg">delete</span>';
+  }
+}
+
+// Device modal event listeners
+if (closeEditDeviceBtn) {
+  closeEditDeviceBtn.addEventListener("click", closeEditDeviceModal);
+}
+if (editDeviceModalBackdrop) {
+  editDeviceModalBackdrop.addEventListener("click", closeEditDeviceModal);
+}
+if (editDeviceForm) {
+  editDeviceForm.addEventListener("submit", saveDeviceChanges);
+}
+if (deleteDeviceBtn) {
+  deleteDeviceBtn.addEventListener("click", confirmDeleteDevice);
+}
+
+// ==========================================
 // History Management (Unified)
 // ==========================================
 
@@ -511,9 +866,20 @@ async function addToHistory(downloadSpeed, uploadSpeed) {
     timestamp: now.getTime(),
     download: parseFloat(downloadSpeed) || 0,
     upload: parseFloat(uploadSpeed) || 0,
+    ipAddress: currentIpAddress || null,
+    deviceId: null,
   };
 
   if (currentUser) {
+    // Register/update device and link test to it
+    if (currentIpAddress) {
+      const device = await getOrCreateDevice(currentIpAddress);
+      if (device) {
+        result.deviceId = device.id;
+        await incrementDeviceTestCount(device.id);
+      }
+    }
+
     // Save to Firestore
     const docId = await saveToFirestore(result);
     if (docId) {
@@ -738,11 +1104,6 @@ function updateScores() {
 
 // Fetch client info using CORS-friendly API
 async function fetchClientInfo() {
-  // Check if the necessary elements exist (only on index page)
-  if (!clientIp && !clientIsp && !serverLocation) {
-    return; // Not on a page that displays this info
-  }
-
   // Try multiple reliable CORS-friendly APIs with fallbacks
   const apis = [
     {
@@ -781,6 +1142,12 @@ async function fetchClientInfo() {
       const data = await response.json();
       const info = await api.parse(data);
 
+      // Store IP address globally for device tracking
+      if (info.ip) {
+        currentIpAddress = info.ip;
+      }
+
+      // Update UI elements if they exist (index page only)
       if (info.ip && clientIp) clientIp.textContent = info.ip;
       if (info.isp && clientIsp) clientIsp.textContent = info.isp;
       if (info.location && serverLocation) serverLocation.textContent = info.location;
@@ -1467,6 +1834,13 @@ auth.onAuthStateChanged(async (user) => {
 
   // Reload history based on auth state
   await loadHistory();
+
+  // Load and render devices (for devices page)
+  if (devicesGrid) {
+    if (devicesLoading) devicesLoading.classList.remove("hidden");
+    await loadDevices();
+    renderDevicesList();
+  }
 });
 
 // Fetch client info on load
