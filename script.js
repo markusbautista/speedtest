@@ -27,6 +27,46 @@ const db = firebase.firestore();
 let currentUser = null;
 let isAuthInitialized = false;
 
+// ==========================================
+// Auth State Caching
+// ==========================================
+function cacheAuthState(user) {
+  if (user) {
+    const displayName = user.displayName || user.email.split("@")[0];
+    const authCache = {
+      isLoggedIn: true,
+      displayName: displayName,
+      email: user.email,
+      photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=ea2a33&color=fff`,
+      cachedAt: Date.now(),
+    };
+    localStorage.setItem("authStateCache", JSON.stringify(authCache));
+  } else {
+    localStorage.setItem(
+      "authStateCache",
+      JSON.stringify({ isLoggedIn: false, cachedAt: Date.now() }),
+    );
+  }
+}
+
+function getAuthStateCache() {
+  try {
+    const cache = localStorage.getItem("authStateCache");
+    if (!cache) return null;
+    const authCache = JSON.parse(cache);
+    // Cache expires after 7 days
+    const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - authCache.cachedAt > CACHE_EXPIRY) {
+      localStorage.removeItem("authStateCache");
+      return null;
+    }
+    return authCache;
+  } catch (error) {
+    console.error("Error reading auth cache:", error);
+    return null;
+  }
+}
+
 // DOM Elements
 const startBtn = document.getElementById("startBtn");
 const btnIcon = document.getElementById("btnIcon");
@@ -109,6 +149,30 @@ const userName = document.getElementById("userName");
 const userDropdown = document.getElementById("userDropdown");
 const userEmailDisplay = document.getElementById("userEmailDisplay");
 const logoutBtn = document.getElementById("logoutBtn");
+
+// Restore cached auth UI immediately on DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+  const authCache = getAuthStateCache();
+  const authLoading = document.getElementById("authLoading");
+  
+  if (authCache) {
+    if (authCache.isLoggedIn) {
+      // Show user menu with cached data
+      if (authLoading) authLoading.classList.add("hidden");
+      if (loginBtn) loginBtn.classList.add("hidden");
+      if (userMenu) userMenu.classList.remove("hidden");
+      if (userName) userName.textContent = authCache.displayName;
+      if (userEmailDisplay) userEmailDisplay.textContent = authCache.email;
+      if (userAvatar) userAvatar.src = authCache.photoURL;
+    } else {
+      // Show login button
+      if (authLoading) authLoading.classList.add("hidden");
+      if (loginBtn) loginBtn.classList.remove("hidden");
+      if (userMenu) userMenu.classList.add("hidden");
+    }
+  }
+  // If no cache, keep showing loading spinner until Firebase initializes
+});
 
 let speedTest = null;
 let isRunning = false;
@@ -229,6 +293,13 @@ function closeAuthModal() {
 
 // Update UI based on auth state
 function updateAuthUI(user) {
+  // Hide loading state
+  const authLoading = document.getElementById("authLoading");
+  if (authLoading) authLoading.classList.add("hidden");
+
+  // Cache the auth state
+  cacheAuthState(user);
+
   if (user) {
     loginBtn.classList.add("hidden");
     userMenu.classList.remove("hidden");

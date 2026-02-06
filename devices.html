@@ -23,6 +23,21 @@
           document.documentElement.classList.remove("light");
         }
       })();
+
+      // Restore auth state from cache to prevent flash
+      (function () {
+        try {
+          const cache = localStorage.getItem("authStateCache");
+          if (cache) {
+            const authCache = JSON.parse(cache);
+            const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000;
+            if (Date.now() - authCache.cachedAt <= CACHE_EXPIRY) {
+              // Store in sessionStorage for DOMContentLoaded to use
+              sessionStorage.setItem("authStateCache", cache);
+            }
+          }
+        } catch (e) {}
+      })();
     </script>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
@@ -137,10 +152,15 @@
         <div class="flex items-center gap-2 sm:gap-4">
           <!-- Auth UI -->
           <div id="authContainer" class="flex items-center gap-2">
+            <!-- Loading State (shown during initialization) -->
+            <div id="authLoading" class="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2">
+              <span class="material-symbols-outlined text-gray-400 text-lg animate-spin">progress_activity</span>
+            </div>
+
             <!-- Login Button (shown when logged out) -->
             <button
               id="loginBtn"
-              class="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors"
+              class="hidden flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors"
             >
               <span class="material-symbols-outlined text-lg">login</span>
               <span class="hidden sm:inline">Sign In</span>
