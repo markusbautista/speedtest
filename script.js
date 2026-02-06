@@ -74,6 +74,9 @@ const exportPdfBtn = document.getElementById("exportPdfBtn");
 const historyTableBody = document.getElementById("historyTableBody");
 const emptyHistoryRow = document.getElementById("emptyHistoryRow");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const historyLoading = document.getElementById("historyLoading");
+const historyEmpty = document.getElementById("historyEmpty");
+const historyTableContainer = document.getElementById("historyTableContainer");
 
 // Dark mode elements
 const darkModeToggle = document.getElementById("darkModeToggle");
@@ -241,7 +244,7 @@ function updateAuthUI(user) {
     } else {
       // Generate a placeholder avatar with initials
       userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        displayName
+        displayName,
       )}&background=ea2a33&color=fff`;
     }
   } else {
@@ -477,7 +480,7 @@ const devicesEmpty = document.getElementById("devicesEmpty");
 const devicesLoggedOut = document.getElementById("devicesLoggedOut");
 const editDeviceModal = document.getElementById("editDeviceModal");
 const editDeviceModalBackdrop = document.getElementById(
-  "editDeviceModalBackdrop"
+  "editDeviceModalBackdrop",
 );
 const closeEditDeviceBtn = document.getElementById("closeEditDeviceBtn");
 const editDeviceForm = document.getElementById("editDeviceForm");
@@ -812,7 +815,7 @@ async function confirmDeleteDevice() {
     !confirm(
       `Are you sure you want to delete "${
         device?.deviceName || "this device"
-      }"? This action cannot be undone.`
+      }"? This action cannot be undone.`,
     )
   ) {
     return;
@@ -949,21 +952,26 @@ function getComparisonClass(current, compare, inverse = false) {
 // Render history table
 function renderHistoryTable() {
   // Guard clause: Check if required DOM elements exist (they only exist on history.html)
-  if (!historyTableBody || !emptyHistoryRow) {
+  if (!historyTableBody) {
     return; // Exit silently if we're not on the history page
   }
 
+  // Hide loading state
+  if (historyLoading) historyLoading.classList.add("hidden");
+
   if (testHistory.length === 0) {
-    emptyHistoryRow.classList.remove("hidden");
-    // Remove any existing data rows
-    const dataRows = historyTableBody.querySelectorAll(
-      "tr:not(#emptyHistoryRow)"
-    );
-    dataRows.forEach((row) => row.remove());
+    // Show empty state, hide table
+    if (historyEmpty) historyEmpty.classList.remove("hidden");
+    if (historyTableContainer) historyTableContainer.classList.add("hidden");
     return;
   }
 
-  emptyHistoryRow.classList.add("hidden");
+  // Show table, hide empty state
+  if (historyEmpty) historyEmpty.classList.add("hidden");
+  if (historyTableContainer) historyTableContainer.classList.remove("hidden");
+
+  // Clear existing rows
+  historyTableBody.innerHTML = "";
 
   // Calculate stats
   const downloads = testHistory.map((t) => t.download);
@@ -972,12 +980,6 @@ function renderHistoryTable() {
   const lowestDownload = Math.min(...downloads.filter((d) => d > 0));
   const highestUpload = Math.max(...uploads);
   const lowestUpload = Math.min(...uploads.filter((u) => u > 0));
-
-  // Clear existing data rows
-  const dataRows = historyTableBody.querySelectorAll(
-    "tr:not(#emptyHistoryRow)"
-  );
-  dataRows.forEach((row) => row.remove());
 
   // Render each test result
   testHistory.forEach((test, index) => {
@@ -1009,26 +1011,26 @@ function renderHistoryTable() {
       }</td>
       <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${deviceName}</td>
       <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white tabular-nums">${test.download.toFixed(
-        1
+        1,
       )} Mbps</td>
       <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white tabular-nums">${test.upload.toFixed(
-        1
+        1,
       )} Mbps</td>
       <td class="px-4 py-3 text-sm font-semibold tabular-nums ${getComparisonClass(
         avgSpeed,
-        prevAvgSpeed
+        prevAvgSpeed,
       )}">
         ${calculateComparison(avgSpeed, prevAvgSpeed)}
       </td>
       <td class="px-4 py-3 text-sm font-semibold tabular-nums ${getComparisonClass(
         avgSpeed,
-        (highestDownload + highestUpload) / 2
+        (highestDownload + highestUpload) / 2,
       )}">
         ${calculateComparison(avgSpeed, (highestDownload + highestUpload) / 2)}
       </td>
       <td class="px-4 py-3 text-sm font-semibold tabular-nums ${getComparisonClass(
         avgSpeed,
-        (lowestDownload + lowestUpload) / 2
+        (lowestDownload + lowestUpload) / 2,
       )}">
         ${calculateComparison(avgSpeed, (lowestDownload + lowestUpload) / 2)}
       </td>
@@ -1210,7 +1212,7 @@ async function fetchClientInfo() {
   }
 
   console.log(
-    "All APIs failed. Info will be populated from speed test results."
+    "All APIs failed. Info will be populated from speed test results.",
   );
 }
 
@@ -1303,7 +1305,7 @@ function startSpeedTest() {
     if (summary.download && summary.upload) {
       addToHistory(
         (summary.download / 1_000_000).toFixed(1),
-        (summary.upload / 1_000_000).toFixed(1)
+        (summary.upload / 1_000_000).toFixed(1),
       );
     }
 
@@ -1396,13 +1398,16 @@ function saveSettingsToLocalStorage(settings) {
   try {
     // Validate settings before saving
     const validatedSettings = validateSettings(settings);
-    localStorage.setItem("speedTestSettings", JSON.stringify(validatedSettings));
-    
+    localStorage.setItem(
+      "speedTestSettings",
+      JSON.stringify(validatedSettings),
+    );
+
     // If user is logged in, sync to Firebase
     if (currentUser) {
       syncSettingsToFirebase(validatedSettings);
     }
-    
+
     return true;
   } catch (error) {
     console.error("Error saving settings to localStorage:", error);
@@ -1413,7 +1418,7 @@ function saveSettingsToLocalStorage(settings) {
 // Validate settings to ensure they're within acceptable ranges
 function validateSettings(settings) {
   const validated = { ...settings };
-  
+
   // Validate percentiles (0-1 range)
   if (validated.latencyPercentile < 0 || validated.latencyPercentile > 1) {
     validated.latencyPercentile = DEFAULT_SETTINGS.latencyPercentile;
@@ -1421,49 +1426,63 @@ function validateSettings(settings) {
   if (validated.bandwidthPercentile < 0 || validated.bandwidthPercentile > 1) {
     validated.bandwidthPercentile = DEFAULT_SETTINGS.bandwidthPercentile;
   }
-  
+
   // Validate throttle (100-2000ms)
-  if (validated.loadedLatencyThrottle < 100 || validated.loadedLatencyThrottle > 2000) {
+  if (
+    validated.loadedLatencyThrottle < 100 ||
+    validated.loadedLatencyThrottle > 2000
+  ) {
     validated.loadedLatencyThrottle = DEFAULT_SETTINGS.loadedLatencyThrottle;
   }
-  
+
   // Validate min request duration (1-100ms)
-  if (validated.bandwidthMinRequestDuration < 1 || validated.bandwidthMinRequestDuration > 100) {
-    validated.bandwidthMinRequestDuration = DEFAULT_SETTINGS.bandwidthMinRequestDuration;
+  if (
+    validated.bandwidthMinRequestDuration < 1 ||
+    validated.bandwidthMinRequestDuration > 100
+  ) {
+    validated.bandwidthMinRequestDuration =
+      DEFAULT_SETTINGS.bandwidthMinRequestDuration;
   }
-  
+
   // Validate test mode
   const validModes = ["full", "quick", "download-only", "upload-only"];
   if (!validModes.includes(validated.testMode)) {
     validated.testMode = DEFAULT_SETTINGS.testMode;
   }
-  
+
   // Validate URLs (basic check)
-  if (!validated.downloadApiUrl || !validated.downloadApiUrl.startsWith("http")) {
+  if (
+    !validated.downloadApiUrl ||
+    !validated.downloadApiUrl.startsWith("http")
+  ) {
     validated.downloadApiUrl = DEFAULT_SETTINGS.downloadApiUrl;
   }
   if (!validated.uploadApiUrl || !validated.uploadApiUrl.startsWith("http")) {
     validated.uploadApiUrl = DEFAULT_SETTINGS.uploadApiUrl;
   }
-  
+
   // Ensure boolean values
-  validated.measureDownloadLoadedLatency = Boolean(validated.measureDownloadLoadedLatency);
-  validated.measureUploadLoadedLatency = Boolean(validated.measureUploadLoadedLatency);
-  
+  validated.measureDownloadLoadedLatency = Boolean(
+    validated.measureDownloadLoadedLatency,
+  );
+  validated.measureUploadLoadedLatency = Boolean(
+    validated.measureUploadLoadedLatency,
+  );
+
   return validated;
 }
 
 // Sync settings to Firebase for logged-in users
 async function syncSettingsToFirebase(settings) {
   if (!currentUser) return;
-  
+
   try {
     await db.collection("userSettings").doc(currentUser.uid).set(
       {
         settings: settings,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
     console.log("Settings synced to Firebase");
   } catch (error) {
@@ -1474,7 +1493,7 @@ async function syncSettingsToFirebase(settings) {
 // Load settings from Firebase for logged-in users
 async function loadSettingsFromFirebase() {
   if (!currentUser) return null;
-  
+
   try {
     const doc = await db.collection("userSettings").doc(currentUser.uid).get();
     if (doc.exists && doc.data().settings) {
@@ -1489,7 +1508,7 @@ async function loadSettingsFromFirebase() {
 // Initialize settings on page load
 async function initializeSettings() {
   let settings = loadSettingsFromLocalStorage();
-  
+
   // If user is logged in, try to load from Firebase
   if (currentUser) {
     const firebaseSettings = await loadSettingsFromFirebase();
@@ -1499,7 +1518,7 @@ async function initializeSettings() {
       saveSettingsToLocalStorage(settings);
     }
   }
-  
+
   return settings;
 }
 
@@ -1578,9 +1597,8 @@ function updateReportModal() {
   // Timestamp
   if (downloadSpeed.textContent !== "—" || uploadSpeed.textContent !== "—") {
     const now = new Date();
-    document.getElementById(
-      "reportTimestamp"
-    ).textContent = `Test completed on ${now.toLocaleString()}`;
+    document.getElementById("reportTimestamp").textContent =
+      `Test completed on ${now.toLocaleString()}`;
   } else {
     document.getElementById("reportTimestamp").textContent =
       "Test not completed yet";
@@ -1591,9 +1609,10 @@ function updateReportModal() {
 function getSettings() {
   // Load settings from localStorage
   const savedSettings = loadSettingsFromLocalStorage();
-  
+
   const testMode = savedSettings.testMode;
-  const measureDownloadLoadedLatency = savedSettings.measureDownloadLoadedLatency;
+  const measureDownloadLoadedLatency =
+    savedSettings.measureDownloadLoadedLatency;
   const measureUploadLoadedLatency = savedSettings.measureUploadLoadedLatency;
   const latencyPercentile = savedSettings.latencyPercentile;
   const bandwidthPercentile = savedSettings.bandwidthPercentile;
@@ -1690,28 +1709,42 @@ function getSettings() {
 // Reset settings to defaults (now also updates localStorage)
 function resetSettings() {
   saveSettingsToLocalStorage(DEFAULT_SETTINGS);
-  
+
   // Update form fields if they exist (for settings page)
   const testModeEl = document.getElementById("testMode");
-  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureDownloadEl = document.getElementById(
+    "measureDownloadLoadedLatency",
+  );
   const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
   const latencyPercentileEl = document.getElementById("latencyPercentile");
   const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
-  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
-  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const loadedLatencyThrottleEl = document.getElementById(
+    "loadedLatencyThrottle",
+  );
+  const bandwidthMinRequestDurationEl = document.getElementById(
+    "bandwidthMinRequestDuration",
+  );
   const downloadApiUrlEl = document.getElementById("downloadApiUrl");
   const uploadApiUrlEl = document.getElementById("uploadApiUrl");
-  
+
   if (testModeEl) testModeEl.value = DEFAULT_SETTINGS.testMode;
-  if (measureDownloadEl) measureDownloadEl.checked = DEFAULT_SETTINGS.measureDownloadLoadedLatency;
-  if (measureUploadEl) measureUploadEl.checked = DEFAULT_SETTINGS.measureUploadLoadedLatency;
-  if (latencyPercentileEl) latencyPercentileEl.value = DEFAULT_SETTINGS.latencyPercentile;
-  if (bandwidthPercentileEl) bandwidthPercentileEl.value = DEFAULT_SETTINGS.bandwidthPercentile;
-  if (loadedLatencyThrottleEl) loadedLatencyThrottleEl.value = DEFAULT_SETTINGS.loadedLatencyThrottle;
-  if (bandwidthMinRequestDurationEl) bandwidthMinRequestDurationEl.value = DEFAULT_SETTINGS.bandwidthMinRequestDuration;
-  if (downloadApiUrlEl) downloadApiUrlEl.value = DEFAULT_SETTINGS.downloadApiUrl;
+  if (measureDownloadEl)
+    measureDownloadEl.checked = DEFAULT_SETTINGS.measureDownloadLoadedLatency;
+  if (measureUploadEl)
+    measureUploadEl.checked = DEFAULT_SETTINGS.measureUploadLoadedLatency;
+  if (latencyPercentileEl)
+    latencyPercentileEl.value = DEFAULT_SETTINGS.latencyPercentile;
+  if (bandwidthPercentileEl)
+    bandwidthPercentileEl.value = DEFAULT_SETTINGS.bandwidthPercentile;
+  if (loadedLatencyThrottleEl)
+    loadedLatencyThrottleEl.value = DEFAULT_SETTINGS.loadedLatencyThrottle;
+  if (bandwidthMinRequestDurationEl)
+    bandwidthMinRequestDurationEl.value =
+      DEFAULT_SETTINGS.bandwidthMinRequestDuration;
+  if (downloadApiUrlEl)
+    downloadApiUrlEl.value = DEFAULT_SETTINGS.downloadApiUrl;
   if (uploadApiUrlEl) uploadApiUrlEl.value = DEFAULT_SETTINGS.uploadApiUrl;
-  
+
   return true;
 }
 
@@ -1900,7 +1933,7 @@ function exportReportToPDF() {
   // Speed Metrics Table
   yPos += drawTableRow(yPos, "SPEED METRICS", "", true);
   const downloadSpeedText = document.getElementById(
-    "reportDownloadSpeed"
+    "reportDownloadSpeed",
   ).textContent;
   const uploadSpeedText =
     document.getElementById("reportUploadSpeed").textContent;
@@ -1914,7 +1947,7 @@ function exportReportToPDF() {
   const latencyText = document.getElementById("reportLatency").textContent;
   const jitterText = document.getElementById("reportJitter").textContent;
   const loadedLatencyText = document.getElementById(
-    "reportLoadedLatency"
+    "reportLoadedLatency",
   ).textContent;
   yPos += drawTableRow(yPos, "Unloaded Latency", latencyText);
   yPos += drawTableRow(yPos, "Jitter", jitterText);
@@ -1936,7 +1969,7 @@ function exportReportToPDF() {
   // Quality Scores Table
   yPos += drawTableRow(yPos, "QUALITY SCORES", "", true);
   const streamingBadgeText = document.getElementById(
-    "reportStreamingBadge"
+    "reportStreamingBadge",
   ).textContent;
   const gamingBadgeText =
     document.getElementById("reportGamingBadge").textContent;
@@ -2030,7 +2063,11 @@ auth.onAuthStateChanged(async (user) => {
   }
 
   // Reload history based on auth state (only if we're on a page with history table)
-  if (historyTableBody && emptyHistoryRow) {
+  if (historyTableBody) {
+    // Show loading state first
+    if (historyLoading) historyLoading.classList.remove("hidden");
+    if (historyEmpty) historyEmpty.classList.add("hidden");
+    if (historyTableContainer) historyTableContainer.classList.add("hidden");
     await loadHistory();
   }
 
@@ -2060,32 +2097,44 @@ if (isSettingsPage) {
 async function initializeSettingsPage() {
   // Load current settings
   const settings = await initializeSettings();
-  
+
   // Populate form fields
   populateSettingsForm(settings);
-  
+
   // Add event listeners for settings form
   setupSettingsPageListeners();
 }
 
 function populateSettingsForm(settings) {
   const testModeEl = document.getElementById("testMode");
-  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureDownloadEl = document.getElementById(
+    "measureDownloadLoadedLatency",
+  );
   const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
   const latencyPercentileEl = document.getElementById("latencyPercentile");
   const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
-  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
-  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const loadedLatencyThrottleEl = document.getElementById(
+    "loadedLatencyThrottle",
+  );
+  const bandwidthMinRequestDurationEl = document.getElementById(
+    "bandwidthMinRequestDuration",
+  );
   const downloadApiUrlEl = document.getElementById("downloadApiUrl");
   const uploadApiUrlEl = document.getElementById("uploadApiUrl");
-  
+
   if (testModeEl) testModeEl.value = settings.testMode;
-  if (measureDownloadEl) measureDownloadEl.checked = settings.measureDownloadLoadedLatency;
-  if (measureUploadEl) measureUploadEl.checked = settings.measureUploadLoadedLatency;
-  if (latencyPercentileEl) latencyPercentileEl.value = settings.latencyPercentile;
-  if (bandwidthPercentileEl) bandwidthPercentileEl.value = settings.bandwidthPercentile;
-  if (loadedLatencyThrottleEl) loadedLatencyThrottleEl.value = settings.loadedLatencyThrottle;
-  if (bandwidthMinRequestDurationEl) bandwidthMinRequestDurationEl.value = settings.bandwidthMinRequestDuration;
+  if (measureDownloadEl)
+    measureDownloadEl.checked = settings.measureDownloadLoadedLatency;
+  if (measureUploadEl)
+    measureUploadEl.checked = settings.measureUploadLoadedLatency;
+  if (latencyPercentileEl)
+    latencyPercentileEl.value = settings.latencyPercentile;
+  if (bandwidthPercentileEl)
+    bandwidthPercentileEl.value = settings.bandwidthPercentile;
+  if (loadedLatencyThrottleEl)
+    loadedLatencyThrottleEl.value = settings.loadedLatencyThrottle;
+  if (bandwidthMinRequestDurationEl)
+    bandwidthMinRequestDurationEl.value = settings.bandwidthMinRequestDuration;
   if (downloadApiUrlEl) downloadApiUrlEl.value = settings.downloadApiUrl;
   if (uploadApiUrlEl) uploadApiUrlEl.value = settings.uploadApiUrl;
 }
@@ -2093,7 +2142,7 @@ function populateSettingsForm(settings) {
 function setupSettingsPageListeners() {
   const resetBtn = document.getElementById("resetSettingsBtn");
   const saveBtn = document.getElementById("saveSettingsBtn");
-  
+
   // Auto-save on change
   const formInputs = [
     "testMode",
@@ -2104,10 +2153,10 @@ function setupSettingsPageListeners() {
     "loadedLatencyThrottle",
     "bandwidthMinRequestDuration",
     "downloadApiUrl",
-    "uploadApiUrl"
+    "uploadApiUrl",
   ];
-  
-  formInputs.forEach(inputId => {
+
+  formInputs.forEach((inputId) => {
     const element = document.getElementById(inputId);
     if (element) {
       element.addEventListener("change", () => {
@@ -2115,7 +2164,7 @@ function setupSettingsPageListeners() {
       });
     }
   });
-  
+
   // Reset button
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -2125,14 +2174,17 @@ function setupSettingsPageListeners() {
       }
     });
   }
-  
+
   // Save button (manual save with feedback)
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
       if (saveCurrentSettings()) {
         showSettingsFeedback("Settings saved successfully!", "success");
       } else {
-        showSettingsFeedback("Error saving settings. Please check your inputs.", "error");
+        showSettingsFeedback(
+          "Error saving settings. Please check your inputs.",
+          "error",
+        );
       }
     });
   }
@@ -2140,62 +2192,87 @@ function setupSettingsPageListeners() {
 
 function saveCurrentSettings() {
   const testModeEl = document.getElementById("testMode");
-  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureDownloadEl = document.getElementById(
+    "measureDownloadLoadedLatency",
+  );
   const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
   const latencyPercentileEl = document.getElementById("latencyPercentile");
   const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
-  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
-  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const loadedLatencyThrottleEl = document.getElementById(
+    "loadedLatencyThrottle",
+  );
+  const bandwidthMinRequestDurationEl = document.getElementById(
+    "bandwidthMinRequestDuration",
+  );
   const downloadApiUrlEl = document.getElementById("downloadApiUrl");
   const uploadApiUrlEl = document.getElementById("uploadApiUrl");
-  
+
   const settings = {
     testMode: testModeEl ? testModeEl.value : DEFAULT_SETTINGS.testMode,
-    measureDownloadLoadedLatency: measureDownloadEl ? measureDownloadEl.checked : DEFAULT_SETTINGS.measureDownloadLoadedLatency,
-    measureUploadLoadedLatency: measureUploadEl ? measureUploadEl.checked : DEFAULT_SETTINGS.measureUploadLoadedLatency,
-    latencyPercentile: latencyPercentileEl ? parseFloat(latencyPercentileEl.value) : DEFAULT_SETTINGS.latencyPercentile,
-    bandwidthPercentile: bandwidthPercentileEl ? parseFloat(bandwidthPercentileEl.value) : DEFAULT_SETTINGS.bandwidthPercentile,
-    loadedLatencyThrottle: loadedLatencyThrottleEl ? parseInt(loadedLatencyThrottleEl.value) : DEFAULT_SETTINGS.loadedLatencyThrottle,
-    bandwidthMinRequestDuration: bandwidthMinRequestDurationEl ? parseInt(bandwidthMinRequestDurationEl.value) : DEFAULT_SETTINGS.bandwidthMinRequestDuration,
-    downloadApiUrl: downloadApiUrlEl ? downloadApiUrlEl.value.trim() : DEFAULT_SETTINGS.downloadApiUrl,
-    uploadApiUrl: uploadApiUrlEl ? uploadApiUrlEl.value.trim() : DEFAULT_SETTINGS.uploadApiUrl,
+    measureDownloadLoadedLatency: measureDownloadEl
+      ? measureDownloadEl.checked
+      : DEFAULT_SETTINGS.measureDownloadLoadedLatency,
+    measureUploadLoadedLatency: measureUploadEl
+      ? measureUploadEl.checked
+      : DEFAULT_SETTINGS.measureUploadLoadedLatency,
+    latencyPercentile: latencyPercentileEl
+      ? parseFloat(latencyPercentileEl.value)
+      : DEFAULT_SETTINGS.latencyPercentile,
+    bandwidthPercentile: bandwidthPercentileEl
+      ? parseFloat(bandwidthPercentileEl.value)
+      : DEFAULT_SETTINGS.bandwidthPercentile,
+    loadedLatencyThrottle: loadedLatencyThrottleEl
+      ? parseInt(loadedLatencyThrottleEl.value)
+      : DEFAULT_SETTINGS.loadedLatencyThrottle,
+    bandwidthMinRequestDuration: bandwidthMinRequestDurationEl
+      ? parseInt(bandwidthMinRequestDurationEl.value)
+      : DEFAULT_SETTINGS.bandwidthMinRequestDuration,
+    downloadApiUrl: downloadApiUrlEl
+      ? downloadApiUrlEl.value.trim()
+      : DEFAULT_SETTINGS.downloadApiUrl,
+    uploadApiUrl: uploadApiUrlEl
+      ? uploadApiUrlEl.value.trim()
+      : DEFAULT_SETTINGS.uploadApiUrl,
   };
-  
+
   return saveSettingsToLocalStorage(settings);
 }
 
 function showSettingsFeedback(message, type = "success") {
   // Create or get feedback element
   let feedback = document.getElementById("settingsFeedback");
-  
+
   if (!feedback) {
     feedback = document.createElement("div");
     feedback.id = "settingsFeedback";
-    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all transform translate-y-20 opacity-0";
+    feedback.className =
+      "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all transform translate-y-20 opacity-0";
     document.body.appendChild(feedback);
   }
-  
+
   // Set message and styling based on type
   if (type === "success") {
-    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-green-500 text-white";
+    feedback.className =
+      "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-green-500 text-white";
     feedback.innerHTML = `
       <span class="material-symbols-outlined">check_circle</span>
       <span>${message}</span>
     `;
   } else {
-    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-red-500 text-white";
+    feedback.className =
+      "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-red-500 text-white";
     feedback.innerHTML = `
       <span class="material-symbols-outlined">error</span>
       <span>${message}</span>
     `;
   }
-  
+
   // Animate in
   setTimeout(() => {
     feedback.style.transform = "translateY(0)";
     feedback.style.opacity = "1";
   }, 10);
-  
+
   // Animate out after 3 seconds
   setTimeout(() => {
     feedback.style.transform = "translateY(20px)";

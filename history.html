@@ -240,8 +240,55 @@
             </button>
           </div>
 
+          <!-- Loading State -->
           <div
-            class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
+            id="historyLoading"
+            class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
+          >
+            <div class="flex flex-col items-center text-center gap-4">
+              <span
+                class="material-symbols-outlined text-primary text-4xl animate-spin"
+                >progress_activity</span
+              >
+              <p class="text-gray-500 dark:text-gray-400">
+                Loading your test history...
+              </p>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            id="historyEmpty"
+            class="hidden bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
+          >
+            <div class="flex flex-col items-center text-center gap-6">
+              <div class="bg-primary/10 p-6 rounded-2xl">
+                <span class="material-symbols-outlined text-primary text-6xl"
+                  >history</span
+                >
+              </div>
+              <div class="space-y-2">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                  No Test History Yet
+                </h2>
+                <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                  Run a speed test to start tracking your results and monitor your connection performance over time.
+                </p>
+              </div>
+              <a
+                href="index.html"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
+              >
+                <span class="material-symbols-outlined">speed</span>
+                Run Speed Test
+              </a>
+            </div>
+          </div>
+
+          <!-- History Table -->
+          <div
+            id="historyTableContainer"
+            class="hidden bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
           >
             <div class="overflow-x-auto">
               <table class="w-full">
@@ -295,30 +342,7 @@
                   id="historyTableBody"
                   class="divide-y divide-gray-100 dark:divide-gray-700"
                 >
-                  <!-- Empty state -->
-                  <tr id="emptyHistoryRow">
-                    <td colspan="8" class="px-4 py-12 text-center">
-                      <div class="flex flex-col items-center gap-3">
-                        <span
-                          class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600"
-                          >history</span
-                        >
-                        <p class="text-gray-500 dark:text-gray-400 font-medium">
-                          No test history yet
-                        </p>
-                        <p class="text-sm text-gray-400 dark:text-gray-500">
-                          Run a speed test to start tracking your results
-                        </p>
-                        <a
-                          href="index.html"
-                          class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
-                        >
-                          <span class="material-symbols-outlined">speed</span>
-                          Run Speed Test
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
+                  <!-- Data rows will be rendered by JavaScript -->
                 </tbody>
               </table>
             </div>
