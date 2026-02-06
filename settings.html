@@ -225,40 +225,256 @@
 
         <!-- Coming Soon Card -->
         <div
-          class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-12"
+          class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
         >
-          <div class="flex flex-col items-center text-center gap-6">
-            <div class="bg-primary/10 p-6 rounded-2xl">
-              <span class="material-symbols-outlined text-primary text-6xl"
-                >settings</span
+          <!-- Test Configuration -->
+          <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+            <h3
+              class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2 mb-6"
+            >
+              <span class="material-symbols-outlined text-lg">tune</span>
+              Test Configuration
+            </h3>
+
+            <div class="grid gap-4">
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
               >
-            </div>
-            <div class="space-y-2">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Coming Soon
-              </h2>
-              <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                A dedicated settings page is currently under development. For
-                now, you can access test configuration settings from the main
-                speed test page.
-              </p>
-            </div>
-            <div class="flex gap-4 mt-4">
-              <a
-                href="index.html"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors"
+                <div>
+                  <label
+                    for="testMode"
+                    class="font-medium text-gray-900 dark:text-white"
+                    >Test Mode</label
+                  >
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Quick uses smaller files, full is more accurate
+                  </p>
+                </div>
+                <select
+                  id="testMode"
+                  class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="full">Full Test</option>
+                  <option value="quick">Quick Test</option>
+                  <option value="download-only">Download Only</option>
+                  <option value="upload-only">Upload Only</option>
+                </select>
+              </div>
+
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
               >
-                <span class="material-symbols-outlined">speed</span>
-                Run Speed Test
-              </a>
-              <a
-                href="history.html"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-lg transition-colors"
+                <div>
+                  <label
+                    for="measureDownloadLoadedLatency"
+                    class="font-medium text-gray-900 dark:text-white"
+                    >Measure Download Loaded Latency</label
+                  >
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Latency during download activity
+                  </p>
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="measureDownloadLoadedLatency"
+                    checked
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
               >
-                <span class="material-symbols-outlined">history</span>
-                View History
-              </a>
+                <div>
+                  <label
+                    for="measureUploadLoadedLatency"
+                    class="font-medium text-gray-900 dark:text-white"
+                    >Measure Upload Loaded Latency</label
+                  >
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Latency during upload activity
+                  </p>
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    id="measureUploadLoadedLatency"
+                    checked
+                    class="sr-only peer"
+                  />
+                  <div
+                    class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"
+                  ></div>
+                </label>
+              </div>
             </div>
+          </div>
+
+          <!-- Advanced Settings -->
+          <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+            <h3
+              class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2 mb-6"
+            >
+              <span class="material-symbols-outlined text-lg">science</span>
+              Advanced Settings
+            </h3>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="latencyPercentile"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Latency Percentile</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  0.5 = median, higher = more conservative
+                </p>
+                <input
+                  type="number"
+                  id="latencyPercentile"
+                  value="0.5"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="bandwidthPercentile"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Bandwidth Percentile</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  0.9 = 90th percentile (recommended)
+                </p>
+                <input
+                  type="number"
+                  id="bandwidthPercentile"
+                  value="0.9"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="loadedLatencyThrottle"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Loaded Latency Throttle (ms)</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Interval between loaded latency requests
+                </p>
+                <input
+                  type="number"
+                  id="loadedLatencyThrottle"
+                  value="400"
+                  min="100"
+                  max="2000"
+                  step="100"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="bandwidthMinRequestDuration"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Min Request Duration (ms)</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Minimum duration for bandwidth calculation
+                </p>
+                <input
+                  type="number"
+                  id="bandwidthMinRequestDuration"
+                  value="10"
+                  min="1"
+                  max="100"
+                  step="1"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Endpoints -->
+          <div class="p-6">
+            <h3
+              class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2 mb-6"
+            >
+              <span class="material-symbols-outlined text-lg">dns</span>
+              Endpoints (Advanced)
+            </h3>
+
+            <div class="grid gap-4">
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="downloadApiUrl"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Download API URL</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Cloudflare download endpoint
+                </p>
+                <input
+                  type="text"
+                  id="downloadApiUrl"
+                  value="https://speed.cloudflare.com/__down"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
+                />
+              </div>
+
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <label
+                  for="uploadApiUrl"
+                  class="font-medium text-gray-900 dark:text-white"
+                  >Upload API URL</label
+                >
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Cloudflare upload endpoint
+                </p>
+                <input
+                  type="text"
+                  id="uploadApiUrl"
+                  value="https://speed.cloudflare.com/__up"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div
+            class="flex items-center justify-between gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+          >
+            <button
+              id="resetSettingsBtn"
+              class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-lg">refresh</span>
+              Reset to Defaults
+            </button>
+            <button
+              id="saveSettingsBtn"
+              class="px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors font-bold flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-lg">save</span>
+              Save Settings
+            </button>
           </div>
         </div>
       </div>

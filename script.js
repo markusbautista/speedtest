@@ -1359,15 +1359,158 @@ if (copyIsp) {
   });
 }
 
-// Settings modal functions
+// ==========================================
+// Settings Management with localStorage
+// ==========================================
+
+// Default settings configuration
+const DEFAULT_SETTINGS = {
+  testMode: "full",
+  measureDownloadLoadedLatency: true,
+  measureUploadLoadedLatency: true,
+  latencyPercentile: 0.5,
+  bandwidthPercentile: 0.9,
+  loadedLatencyThrottle: 400,
+  bandwidthMinRequestDuration: 10,
+  downloadApiUrl: "https://speed.cloudflare.com/__down",
+  uploadApiUrl: "https://speed.cloudflare.com/__up",
+};
+
+// Load settings from localStorage
+function loadSettingsFromLocalStorage() {
+  try {
+    const savedSettings = localStorage.getItem("speedTestSettings");
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      // Validate and merge with defaults
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+  } catch (error) {
+    console.error("Error loading settings from localStorage:", error);
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+// Save settings to localStorage
+function saveSettingsToLocalStorage(settings) {
+  try {
+    // Validate settings before saving
+    const validatedSettings = validateSettings(settings);
+    localStorage.setItem("speedTestSettings", JSON.stringify(validatedSettings));
+    
+    // If user is logged in, sync to Firebase
+    if (currentUser) {
+      syncSettingsToFirebase(validatedSettings);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving settings to localStorage:", error);
+    return false;
+  }
+}
+
+// Validate settings to ensure they're within acceptable ranges
+function validateSettings(settings) {
+  const validated = { ...settings };
+  
+  // Validate percentiles (0-1 range)
+  if (validated.latencyPercentile < 0 || validated.latencyPercentile > 1) {
+    validated.latencyPercentile = DEFAULT_SETTINGS.latencyPercentile;
+  }
+  if (validated.bandwidthPercentile < 0 || validated.bandwidthPercentile > 1) {
+    validated.bandwidthPercentile = DEFAULT_SETTINGS.bandwidthPercentile;
+  }
+  
+  // Validate throttle (100-2000ms)
+  if (validated.loadedLatencyThrottle < 100 || validated.loadedLatencyThrottle > 2000) {
+    validated.loadedLatencyThrottle = DEFAULT_SETTINGS.loadedLatencyThrottle;
+  }
+  
+  // Validate min request duration (1-100ms)
+  if (validated.bandwidthMinRequestDuration < 1 || validated.bandwidthMinRequestDuration > 100) {
+    validated.bandwidthMinRequestDuration = DEFAULT_SETTINGS.bandwidthMinRequestDuration;
+  }
+  
+  // Validate test mode
+  const validModes = ["full", "quick", "download-only", "upload-only"];
+  if (!validModes.includes(validated.testMode)) {
+    validated.testMode = DEFAULT_SETTINGS.testMode;
+  }
+  
+  // Validate URLs (basic check)
+  if (!validated.downloadApiUrl || !validated.downloadApiUrl.startsWith("http")) {
+    validated.downloadApiUrl = DEFAULT_SETTINGS.downloadApiUrl;
+  }
+  if (!validated.uploadApiUrl || !validated.uploadApiUrl.startsWith("http")) {
+    validated.uploadApiUrl = DEFAULT_SETTINGS.uploadApiUrl;
+  }
+  
+  // Ensure boolean values
+  validated.measureDownloadLoadedLatency = Boolean(validated.measureDownloadLoadedLatency);
+  validated.measureUploadLoadedLatency = Boolean(validated.measureUploadLoadedLatency);
+  
+  return validated;
+}
+
+// Sync settings to Firebase for logged-in users
+async function syncSettingsToFirebase(settings) {
+  if (!currentUser) return;
+  
+  try {
+    await db.collection("userSettings").doc(currentUser.uid).set(
+      {
+        settings: settings,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    console.log("Settings synced to Firebase");
+  } catch (error) {
+    console.error("Error syncing settings to Firebase:", error);
+  }
+}
+
+// Load settings from Firebase for logged-in users
+async function loadSettingsFromFirebase() {
+  if (!currentUser) return null;
+  
+  try {
+    const doc = await db.collection("userSettings").doc(currentUser.uid).get();
+    if (doc.exists && doc.data().settings) {
+      return doc.data().settings;
+    }
+  } catch (error) {
+    console.error("Error loading settings from Firebase:", error);
+  }
+  return null;
+}
+
+// Initialize settings on page load
+async function initializeSettings() {
+  let settings = loadSettingsFromLocalStorage();
+  
+  // If user is logged in, try to load from Firebase
+  if (currentUser) {
+    const firebaseSettings = await loadSettingsFromFirebase();
+    if (firebaseSettings) {
+      settings = { ...settings, ...firebaseSettings };
+      // Update localStorage with Firebase settings
+      saveSettingsToLocalStorage(settings);
+    }
+  }
+  
+  return settings;
+}
+
+// Settings modal functions (deprecated - kept for backward compatibility)
 function openSettingsModal() {
-  settingsModal.classList.remove("hidden");
-  document.body.style.overflow = "hidden";
+  // Redirect to settings page instead
+  window.location.href = "settings.html";
 }
 
 function closeSettingsModal() {
-  settingsModal.classList.add("hidden");
-  document.body.style.overflow = "";
+  // No longer needed - kept for compatibility
 }
 
 // Report modal functions
@@ -1444,29 +1587,20 @@ function updateReportModal() {
   }
 }
 
-// Get settings from modal form
+// Get settings from localStorage (with fallback to defaults)
 function getSettings() {
-  const testMode = document.getElementById("testMode").value;
-  const measureDownloadLoadedLatency = document.getElementById(
-    "measureDownloadLoadedLatency"
-  ).checked;
-  const measureUploadLoadedLatency = document.getElementById(
-    "measureUploadLoadedLatency"
-  ).checked;
-  const latencyPercentile = parseFloat(
-    document.getElementById("latencyPercentile").value
-  );
-  const bandwidthPercentile = parseFloat(
-    document.getElementById("bandwidthPercentile").value
-  );
-  const loadedLatencyThrottle = parseInt(
-    document.getElementById("loadedLatencyThrottle").value
-  );
-  const bandwidthMinRequestDuration = parseInt(
-    document.getElementById("bandwidthMinRequestDuration").value
-  );
-  const downloadApiUrl = document.getElementById("downloadApiUrl").value.trim();
-  const uploadApiUrl = document.getElementById("uploadApiUrl").value.trim();
+  // Load settings from localStorage
+  const savedSettings = loadSettingsFromLocalStorage();
+  
+  const testMode = savedSettings.testMode;
+  const measureDownloadLoadedLatency = savedSettings.measureDownloadLoadedLatency;
+  const measureUploadLoadedLatency = savedSettings.measureUploadLoadedLatency;
+  const latencyPercentile = savedSettings.latencyPercentile;
+  const bandwidthPercentile = savedSettings.bandwidthPercentile;
+  const loadedLatencyThrottle = savedSettings.loadedLatencyThrottle;
+  const bandwidthMinRequestDuration = savedSettings.bandwidthMinRequestDuration;
+  const downloadApiUrl = savedSettings.downloadApiUrl;
+  const uploadApiUrl = savedSettings.uploadApiUrl;
 
   let measurements;
   switch (testMode) {
@@ -1553,19 +1687,32 @@ function getSettings() {
   return config;
 }
 
-// Reset settings to defaults
+// Reset settings to defaults (now also updates localStorage)
 function resetSettings() {
-  document.getElementById("testMode").value = "full";
-  document.getElementById("measureDownloadLoadedLatency").checked = true;
-  document.getElementById("measureUploadLoadedLatency").checked = true;
-  document.getElementById("latencyPercentile").value = "0.5";
-  document.getElementById("bandwidthPercentile").value = "0.9";
-  document.getElementById("loadedLatencyThrottle").value = "400";
-  document.getElementById("bandwidthMinRequestDuration").value = "10";
-  document.getElementById("downloadApiUrl").value =
-    "https://speed.cloudflare.com/__down";
-  document.getElementById("uploadApiUrl").value =
-    "https://speed.cloudflare.com/__up";
+  saveSettingsToLocalStorage(DEFAULT_SETTINGS);
+  
+  // Update form fields if they exist (for settings page)
+  const testModeEl = document.getElementById("testMode");
+  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
+  const latencyPercentileEl = document.getElementById("latencyPercentile");
+  const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
+  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
+  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const downloadApiUrlEl = document.getElementById("downloadApiUrl");
+  const uploadApiUrlEl = document.getElementById("uploadApiUrl");
+  
+  if (testModeEl) testModeEl.value = DEFAULT_SETTINGS.testMode;
+  if (measureDownloadEl) measureDownloadEl.checked = DEFAULT_SETTINGS.measureDownloadLoadedLatency;
+  if (measureUploadEl) measureUploadEl.checked = DEFAULT_SETTINGS.measureUploadLoadedLatency;
+  if (latencyPercentileEl) latencyPercentileEl.value = DEFAULT_SETTINGS.latencyPercentile;
+  if (bandwidthPercentileEl) bandwidthPercentileEl.value = DEFAULT_SETTINGS.bandwidthPercentile;
+  if (loadedLatencyThrottleEl) loadedLatencyThrottleEl.value = DEFAULT_SETTINGS.loadedLatencyThrottle;
+  if (bandwidthMinRequestDurationEl) bandwidthMinRequestDurationEl.value = DEFAULT_SETTINGS.bandwidthMinRequestDuration;
+  if (downloadApiUrlEl) downloadApiUrlEl.value = DEFAULT_SETTINGS.downloadApiUrl;
+  if (uploadApiUrlEl) uploadApiUrlEl.value = DEFAULT_SETTINGS.uploadApiUrl;
+  
+  return true;
 }
 
 // Settings modal event listeners
@@ -1897,3 +2044,161 @@ auth.onAuthStateChanged(async (user) => {
 
 // Fetch client info on load
 fetchClientInfo();
+
+// ==========================================
+// Settings Page Initialization
+// ==========================================
+
+// Check if we're on the settings page
+const isSettingsPage = window.location.pathname.includes("settings.html");
+
+if (isSettingsPage) {
+  // Initialize settings page
+  initializeSettingsPage();
+}
+
+async function initializeSettingsPage() {
+  // Load current settings
+  const settings = await initializeSettings();
+  
+  // Populate form fields
+  populateSettingsForm(settings);
+  
+  // Add event listeners for settings form
+  setupSettingsPageListeners();
+}
+
+function populateSettingsForm(settings) {
+  const testModeEl = document.getElementById("testMode");
+  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
+  const latencyPercentileEl = document.getElementById("latencyPercentile");
+  const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
+  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
+  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const downloadApiUrlEl = document.getElementById("downloadApiUrl");
+  const uploadApiUrlEl = document.getElementById("uploadApiUrl");
+  
+  if (testModeEl) testModeEl.value = settings.testMode;
+  if (measureDownloadEl) measureDownloadEl.checked = settings.measureDownloadLoadedLatency;
+  if (measureUploadEl) measureUploadEl.checked = settings.measureUploadLoadedLatency;
+  if (latencyPercentileEl) latencyPercentileEl.value = settings.latencyPercentile;
+  if (bandwidthPercentileEl) bandwidthPercentileEl.value = settings.bandwidthPercentile;
+  if (loadedLatencyThrottleEl) loadedLatencyThrottleEl.value = settings.loadedLatencyThrottle;
+  if (bandwidthMinRequestDurationEl) bandwidthMinRequestDurationEl.value = settings.bandwidthMinRequestDuration;
+  if (downloadApiUrlEl) downloadApiUrlEl.value = settings.downloadApiUrl;
+  if (uploadApiUrlEl) uploadApiUrlEl.value = settings.uploadApiUrl;
+}
+
+function setupSettingsPageListeners() {
+  const resetBtn = document.getElementById("resetSettingsBtn");
+  const saveBtn = document.getElementById("saveSettingsBtn");
+  
+  // Auto-save on change
+  const formInputs = [
+    "testMode",
+    "measureDownloadLoadedLatency",
+    "measureUploadLoadedLatency",
+    "latencyPercentile",
+    "bandwidthPercentile",
+    "loadedLatencyThrottle",
+    "bandwidthMinRequestDuration",
+    "downloadApiUrl",
+    "uploadApiUrl"
+  ];
+  
+  formInputs.forEach(inputId => {
+    const element = document.getElementById(inputId);
+    if (element) {
+      element.addEventListener("change", () => {
+        saveCurrentSettings();
+      });
+    }
+  });
+  
+  // Reset button
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      if (confirm("Are you sure you want to reset all settings to defaults?")) {
+        resetSettings();
+        showSettingsFeedback("Settings reset to defaults", "success");
+      }
+    });
+  }
+  
+  // Save button (manual save with feedback)
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      if (saveCurrentSettings()) {
+        showSettingsFeedback("Settings saved successfully!", "success");
+      } else {
+        showSettingsFeedback("Error saving settings. Please check your inputs.", "error");
+      }
+    });
+  }
+}
+
+function saveCurrentSettings() {
+  const testModeEl = document.getElementById("testMode");
+  const measureDownloadEl = document.getElementById("measureDownloadLoadedLatency");
+  const measureUploadEl = document.getElementById("measureUploadLoadedLatency");
+  const latencyPercentileEl = document.getElementById("latencyPercentile");
+  const bandwidthPercentileEl = document.getElementById("bandwidthPercentile");
+  const loadedLatencyThrottleEl = document.getElementById("loadedLatencyThrottle");
+  const bandwidthMinRequestDurationEl = document.getElementById("bandwidthMinRequestDuration");
+  const downloadApiUrlEl = document.getElementById("downloadApiUrl");
+  const uploadApiUrlEl = document.getElementById("uploadApiUrl");
+  
+  const settings = {
+    testMode: testModeEl ? testModeEl.value : DEFAULT_SETTINGS.testMode,
+    measureDownloadLoadedLatency: measureDownloadEl ? measureDownloadEl.checked : DEFAULT_SETTINGS.measureDownloadLoadedLatency,
+    measureUploadLoadedLatency: measureUploadEl ? measureUploadEl.checked : DEFAULT_SETTINGS.measureUploadLoadedLatency,
+    latencyPercentile: latencyPercentileEl ? parseFloat(latencyPercentileEl.value) : DEFAULT_SETTINGS.latencyPercentile,
+    bandwidthPercentile: bandwidthPercentileEl ? parseFloat(bandwidthPercentileEl.value) : DEFAULT_SETTINGS.bandwidthPercentile,
+    loadedLatencyThrottle: loadedLatencyThrottleEl ? parseInt(loadedLatencyThrottleEl.value) : DEFAULT_SETTINGS.loadedLatencyThrottle,
+    bandwidthMinRequestDuration: bandwidthMinRequestDurationEl ? parseInt(bandwidthMinRequestDurationEl.value) : DEFAULT_SETTINGS.bandwidthMinRequestDuration,
+    downloadApiUrl: downloadApiUrlEl ? downloadApiUrlEl.value.trim() : DEFAULT_SETTINGS.downloadApiUrl,
+    uploadApiUrl: uploadApiUrlEl ? uploadApiUrlEl.value.trim() : DEFAULT_SETTINGS.uploadApiUrl,
+  };
+  
+  return saveSettingsToLocalStorage(settings);
+}
+
+function showSettingsFeedback(message, type = "success") {
+  // Create or get feedback element
+  let feedback = document.getElementById("settingsFeedback");
+  
+  if (!feedback) {
+    feedback = document.createElement("div");
+    feedback.id = "settingsFeedback";
+    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all transform translate-y-20 opacity-0";
+    document.body.appendChild(feedback);
+  }
+  
+  // Set message and styling based on type
+  if (type === "success") {
+    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-green-500 text-white";
+    feedback.innerHTML = `
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>${message}</span>
+    `;
+  } else {
+    feedback.className = "fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 transition-all bg-red-500 text-white";
+    feedback.innerHTML = `
+      <span class="material-symbols-outlined">error</span>
+      <span>${message}</span>
+    `;
+  }
+  
+  // Animate in
+  setTimeout(() => {
+    feedback.style.transform = "translateY(0)";
+    feedback.style.opacity = "1";
+  }, 10);
+  
+  // Animate out after 3 seconds
+  setTimeout(() => {
+    feedback.style.transform = "translateY(20px)";
+    feedback.style.opacity = "0";
+  }, 3000);
+}
